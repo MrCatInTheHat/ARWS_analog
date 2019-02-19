@@ -54,12 +54,13 @@
 #include "i2c.h"
 #include "iwdg.h"
 #include "tim.h"
+#include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "scheduler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -81,7 +82,7 @@
 
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
-uint8_t buffer[] = "Hello, kitty!";
+event_t event;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,7 +103,7 @@ void SystemClock_Config(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	static scheduler_t scheduler;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -126,11 +127,12 @@ int main(void)
   MX_I2C1_Init();
   MX_CRC_Init();
   MX_USB_DEVICE_Init();
-  //MX_IWDG_Init();
+//  MX_IWDG_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  scheduler_init(&scheduler);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -139,11 +141,13 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  HAL_Delay(10000);
-	  USBD_CDC_SetTxBuffer(&hUsbDeviceFS,buffer,sizeof(buffer));
-	  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
 
 
+
+	  scheduler.event = event_pend(&event);
+	  scheduler_run(&scheduler);
+	 // HAL_Delay(5000);
+	//  event_post(&event, time_to_poll_adc);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
