@@ -82,6 +82,7 @@
 
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
+extern TIM_HandleTypeDef htim2;
 event_t event;
 /* USER CODE END PV */
 
@@ -138,7 +139,12 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   HAL_Delay(5000);
-
+  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
+  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
+  HAL_TIM_Base_Start_IT(&htim3);
+   HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_1);
+   HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
   while (1)
   {
     /* USER CODE END WHILE */
@@ -147,10 +153,11 @@ int main(void)
 //	  scheduler.event = event_pend(&event);
 //	  scheduler_run(&scheduler);
 //	  HAL_Delay(5000);
-	  event_post(&event, console_out_event);
+	 // event_post(&event, console_out_event);
 	  scheduler.event = event_pend(&event);
 	  scheduler_run(&scheduler);
-	  HAL_Delay(5000);
+	  //HAL_Delay(5);
+	//  event_post(&event, console_out_event);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

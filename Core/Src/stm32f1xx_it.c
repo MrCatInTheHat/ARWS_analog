@@ -36,13 +36,14 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f1xx_it.h"
+#include "scheduler.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
-
+extern event_t event;
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -239,7 +240,7 @@ void TIM2_IRQHandler(void)
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
-
+  //event_post(&event, console_out_event);
   /* USER CODE END TIM2_IRQn 1 */
 }
 
@@ -252,12 +253,37 @@ void TIM3_IRQHandler(void)
 
   /* USER CODE END TIM3_IRQn 0 */
   HAL_TIM_IRQHandler(&htim3);
+
   /* USER CODE BEGIN TIM3_IRQn 1 */
 
   /* USER CODE END TIM3_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	static volatile uint32_t counter;
+  /* Prevent unused argument(s) compilation warning */
+	if ( htim->Instance == TIM2)
+		{
+			if ( htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1 )
+			{
 
+				if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC1OF))  __HAL_TIM_CLEAR_FLAG(htim, TIM_FLAG_CC1OF);
+			}
+			if ( htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2 )
+			{
+				counter++;
+				if ( counter > 10 ) { //event_post(&event, console_out_event);
+				counter = 0; }
+				if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC2OF))  __HAL_TIM_CLEAR_FLAG(htim, TIM_FLAG_CC2OF);
+			}
+		}
+
+
+  /* NOTE : This function Should not be modified, when the callback is needed,
+            the __HAL_TIM_IC_CaptureCallback could be implemented in the user file
+   */
+}
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
