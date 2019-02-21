@@ -8,6 +8,7 @@
 #include "scheduler.h"
 #include "stm32f1xx_hal.h"
 #include "usb_device.h"
+#include "console.h"
 /*********************************************************************
  * @fn      Scheduler init function
  *
@@ -19,7 +20,7 @@
  * @return  None.
  */
 extern USBD_HandleTypeDef hUsbDeviceFS;
-
+extern console_t console;
 
 void task_adc ( struct task_t * task )
 {
@@ -86,6 +87,9 @@ void task_console ( struct task_t * task )
 
     uint8_t event_flag = 1;
     uint8_t buffer[] = "Hello, kitty!";
+    uint8_t buffer_obama[] = "obama!";
+	static cmd_type_t command_type;
+	static uint8_t result = CR_ERROR;
 
     task->state = idle_state;
 
@@ -95,11 +99,24 @@ void task_console ( struct task_t * task )
 
           case console_read_event:
 
+        	  console.input.state = CIS_IDLE;
+        	  if ( CLI_OPENED == console.state ) {
+        	  		  command_type = CT_ONLINE;
+			  }  else command_type = CT_OFFLINE;
+
+			  do {
+			  // Get the next output string from the command interpreter.
+				  result = console_process_command( &console, command_type );
+			  } while ( CR_DONE != result );
+			  console_buffer_clear();
+//        	  USBD_CDC_SetTxBuffer(&hUsbDeviceFS,buffer_obama,sizeof(buffer_obama));
+//			  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
               break;
 
           case console_out_event:
         	  USBD_CDC_SetTxBuffer(&hUsbDeviceFS,buffer,sizeof(buffer));
 			  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+        	  //CDC_Transmit_FS(buffer,sizeof(buffer) );
               break;
 
 
@@ -132,7 +149,7 @@ void scheduler_init( scheduler_t *scheduler_p ){
     scheduler_p->task[2].callback = &task_console;
 	scheduler_p->task[2].event_group = console_task_group;
 
-
+	console_init();
 }
 
 

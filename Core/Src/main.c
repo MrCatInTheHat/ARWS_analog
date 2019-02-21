@@ -137,17 +137,20 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_Delay(5000);
 
   while (1)
   {
     /* USER CODE END WHILE */
-
-
-
+//
+//	  event_post(&event, console_read_event);
+//	  scheduler.event = event_pend(&event);
+//	  scheduler_run(&scheduler);
+//	  HAL_Delay(5000);
+	  event_post(&event, console_out_event);
 	  scheduler.event = event_pend(&event);
 	  scheduler_run(&scheduler);
-	 // HAL_Delay(5000);
-	//  event_post(&event, time_to_poll_adc);
+	  HAL_Delay(5000);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

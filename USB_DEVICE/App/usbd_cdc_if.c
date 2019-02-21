@@ -51,7 +51,8 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "scheduler.h"
+#include "console.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,7 +61,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+extern event_t event;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -288,11 +289,40 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
+
+
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
+  uint8_t symbol =  0 ;
+
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  //memcpy(console.input.buffer, Buf, 5);
+ // event_post(&event, console_read_event);
+
+
+  for ( uint8_t i = 0; i < *Len; ++i ){
+	  symbol = Buf[i];
+	  switch ( symbol ) {
+		// if <ENTER> was pressed
+		case '\r':
+		case '\n':
+			event_post(&event, console_read_event);
+			console.input.buffer[console.input.head] = '\0';
+			console.input.count = ( console.input.count + 1 ) % console.input.size;
+			console.input.head = ( console.input.head + 1 ) % console.input.size;
+		//wrap this
+			break;
+		default:
+			console.input.buffer[console.input.head] = symbol;
+			console.input.count = ( console.input.count + 1 ) % console.input.size;
+			console.input.head = ( console.input.head + 1 ) % console.input.size;
+		//wrap this
+			break;
+	  }
+  }
+
   return (USBD_OK);
   /* USER CODE END 6 */
 }
