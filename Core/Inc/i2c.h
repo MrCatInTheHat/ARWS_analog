@@ -55,9 +55,10 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stdbool.h"
 
 /* USER CODE BEGIN Includes */
-
+ _Bool adc_get( uint8_t address );
 /* USER CODE END Includes */
 
 extern I2C_HandleTypeDef hi2c1;
@@ -69,7 +70,10 @@ extern I2C_HandleTypeDef hi2c1;
 void MX_I2C1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+_Bool i2c_bus_write( uint8_t address, uint8_t opcode, const uint8_t *buffer, uint8_t length );
+_Bool i2c_bus_read( uint8_t address, uint8_t opcode, const uint8_t *buffer, uint8_t length );
+extern bool i2c_bus_eeprom_write( uint8_t address, uint16_t eeprom_addr, uint8_t *buffer, uint8_t length );
+extern bool i2c_bus_eeprom_read( uint8_t address, uint16_t eeprom_addr, uint8_t *buffer, uint8_t length );
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

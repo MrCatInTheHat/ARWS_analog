@@ -70,6 +70,18 @@ const console_command_t g_command_list[] = {
         CT_OFFLINE
     },
 	{
+		(const char *) "WIND",
+		command_wind,
+		"WIND", // GET WIND DATA
+		CT_ONLINE
+	},
+	{
+		(const char *) "TEST",
+		command_test,
+		"TEST", // GET TEST DATA
+		CT_ONLINE
+	},
+	{
         (const char *) "CLOSE",
         command_close,
         "CLOSE CONSOLE", // AUTOMATIC COMMUNICATION/OFFLINE MODE

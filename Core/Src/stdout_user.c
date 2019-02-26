@@ -33,9 +33,10 @@
  
 #include "stdout_user.h"
 #include "stm32f1xx_hal.h"
-
+#include "usb_device.h"
 
 extern UART_HandleTypeDef huart1;
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
 int _write(int fd, char *str, int len);
 /**
@@ -46,7 +47,9 @@ int _write(int fd, char *str, int len);
 */
 int _write(int fd, char *str, int len){
 
-	HAL_UART_Transmit(&huart1, str, len, 5 );
+	USBD_CDC_SetTxBuffer(&hUsbDeviceFS,str,len);
+    USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+	//HAL_UART_Transmit(&huart1, str, len, 5 );
 
   return len;
 

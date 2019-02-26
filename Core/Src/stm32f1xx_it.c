@@ -37,6 +37,7 @@
 #include "main.h"
 #include "stm32f1xx_it.h"
 #include "scheduler.h"
+#include "meteo.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -44,6 +45,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
 extern event_t event;
+extern meteo_t meteo;
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -260,25 +262,31 @@ void TIM3_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+
+	if ( htim->Instance == TIM2) {
+		event_post(&event, counter_ready);
+	}
+
+
+}
+
+
+
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-	static volatile uint32_t counter;
-  /* Prevent unused argument(s) compilation warning */
-	if ( htim->Instance == TIM2)
-		{
-			if ( htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1 )
-			{
 
-				if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC1OF))  __HAL_TIM_CLEAR_FLAG(htim, TIM_FLAG_CC1OF);
-			}
-			if ( htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2 )
-			{
-				counter++;
-				if ( counter > 10 ) { //event_post(&event, console_out_event);
-				counter = 0; }
-				if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC2OF))  __HAL_TIM_CLEAR_FLAG(htim, TIM_FLAG_CC2OF);
-			}
+  /* Prevent unused argument(s) compilation warning */
+	if ( htim->Instance == TIM2){
+
+		if ( htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1 ){
+
+			meteo.wind.counter++;
+			if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC1OF))  __HAL_TIM_CLEAR_FLAG(htim, TIM_FLAG_CC1OF);
 		}
+
+	}
 
 
   /* NOTE : This function Should not be modified, when the callback is needed,

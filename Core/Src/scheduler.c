@@ -9,6 +9,7 @@
 #include "stm32f1xx_hal.h"
 #include "usb_device.h"
 #include "console.h"
+#include "meteo.h"
 /*********************************************************************
  * @fn      Scheduler init function
  *
@@ -19,8 +20,30 @@
  *
  * @return  None.
  */
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
+extern I2C_HandleTypeDef hi2c1;
+
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern console_t console;
+extern event_t event;
+
+meteo_t meteo = { 0 };
+
+#define LENGTH(x)           ( sizeof( (x) ) / sizeof( (x)[ 0 ] ) )
+
+
+inline static uint32_t round_div_u32( uint32_t x, uint32_t y )
+{
+    return ( ( x + (y >> 1) ) / y );
+}
+
+
+inline static uint16_t round_div_u16( uint16_t x, uint16_t y )
+{
+    return ( ( x + (y >> 1) ) / y );
+}
+
 
 void task_adc ( struct task_t * task )
 {
@@ -35,12 +58,13 @@ void task_adc ( struct task_t * task )
 
           case time_to_poll_adc:
 
+        	  temp_meas();
+
               break;
 
           case calibrate_adc:
 
               break;
-
 
           default:
 
@@ -58,7 +82,7 @@ void task_counter ( struct task_t * task )
 {
 
     uint8_t event_flag = 1;
-
+    static wgauge_t wind_gauge;
 
     task->state = idle_state;
 
@@ -68,7 +92,60 @@ void task_counter ( struct task_t * task )
 
           case time_to_start_counter:
 
+        	  HAL_TIM_Base_Start_IT(&htim2);
+        	  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
+//        	  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
+//        	  HAL_TIM_Base_Start_IT(&htim3);
+//        	  HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_1);
+//        	  HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
+
               break;
+
+          case counter_ready:
+
+
+
+
+        	  wind_gauge.total_sum_15 -= wind_gauge.samples[ wind_gauge.index_15 ];
+			  wind_gauge.total_sum_15 += meteo.wind.counter;
+			  wind_gauge.total_sum -= wind_gauge.samples[ wind_gauge.index ];
+			  wind_gauge.total_sum += meteo.wind.counter;
+			  wind_gauge.samples[ wind_gauge.index ] = meteo.wind.counter;
+
+			  ++wind_gauge.index;
+			  if ( wind_gauge.index >= LENGTH( wind_gauge.samples ) ) {
+				  wind_gauge.index = 0;
+			  }
+
+			  wind_gauge.index_15 = wind_gauge.index - 15;
+			  if ( (int8_t) wind_gauge.index_15 < 0 ) {
+				  wind_gauge.index_15 += LENGTH( wind_gauge.samples );
+			  }
+
+			  // 2.
+			  if ( wind_gauge.sample_number_15 < 15 ) {
+				  ++wind_gauge.sample_number_15;
+			  }
+
+			  if ( wind_gauge.sample_number < LENGTH( wind_gauge.samples ) ) {
+				  ++wind_gauge.sample_number;
+			  }
+
+			  meteo.wind.wind_speed = round_div_u16( meteo.wind.counter, 6 );
+			  meteo.wind.wind_speed_15_min = round_div_u32( wind_gauge.total_sum_15, wind_gauge.sample_number_15 * 6 );
+			  meteo.wind.wind_speed_30_min = round_div_u32( wind_gauge.total_sum, wind_gauge.sample_number * 6 );
+
+			  uint16_t wind_gust_30_min = 0;
+			  for ( uint8_t i = 0; i < LENGTH( wind_gauge.samples ); ++i ) {
+				  if ( wind_gauge.samples[ i ] > wind_gust_30_min ) {
+					  wind_gust_30_min = wind_gauge.samples[ i ];
+				  }
+			  }
+			  meteo.wind.wind_gust_30_min = round_div_u16( wind_gust_30_min, 6 );
+
+        	  event_post(&event, time_to_start_counter);
+        	  meteo.wind.counter = 0;
+			  break;
 
           default:
 
@@ -109,8 +186,7 @@ void task_console ( struct task_t * task )
 				  result = console_process_command( &console, command_type );
 			  } while ( CR_DONE != result );
 			  console_buffer_clear();
-//        	  USBD_CDC_SetTxBuffer(&hUsbDeviceFS,buffer_obama,sizeof(buffer_obama));
-//			  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+
               break;
 
           case console_out_event:
@@ -134,22 +210,26 @@ void task_console ( struct task_t * task )
 
 void scheduler_init( scheduler_t *scheduler_p ){
 
-    scheduler_p->task[0].task = adc_task;
-    scheduler_p->task[0].priority = medium_prior;
-    scheduler_p->task[0].callback = &task_adc;
-    scheduler_p->task[0].event_group = adc_task_group;
+	scheduler_p->task[0].task = adc_task;
+	scheduler_p->task[0].priority = medium_prior;
+	scheduler_p->task[0].callback = &task_adc;
+	scheduler_p->task[0].event_group = adc_task_group;
 
-    scheduler_p->task[1].task = counter_task;
-    scheduler_p->task[1].priority = low_prior;
-    scheduler_p->task[1].callback = &task_counter;
+	scheduler_p->task[1].task = counter_task;
+	scheduler_p->task[1].priority = low_prior;
+	scheduler_p->task[1].callback = &task_counter;
 	scheduler_p->task[1].event_group = counter_task_group;
 
-    scheduler_p->task[2].task = console_task;
-    scheduler_p->task[2].priority = high_prior;
-    scheduler_p->task[2].callback = &task_console;
+	scheduler_p->task[2].task = console_task;
+	scheduler_p->task[2].priority = high_prior;
+	scheduler_p->task[2].callback = &task_console;
 	scheduler_p->task[2].event_group = console_task_group;
 
 	console_init();
+
+	adc_init();
+
+	adc_init();
 }
 
 

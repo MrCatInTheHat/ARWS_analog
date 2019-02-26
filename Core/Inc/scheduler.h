@@ -14,11 +14,18 @@
 #define TASK_NUMBER 3
 
 typedef enum {
+    adc_temp_first           = 0x94,
+	adc_temp_second          = 0x92,
+	adc_miscellaneous        = 0x90,
+} adc_address_e;
+
+typedef enum {
     time_to_poll_adc         = 0x01,
 	calibrate_adc            = 0x02,
 	time_to_start_counter    = 0x04,
     console_read_event       = 0x08,
 	console_out_event        = 0x10,
+	counter_ready 		     = 0x20,
 } state_events_e;
 
 
@@ -30,7 +37,7 @@ typedef enum {
 
 typedef enum {
     adc_task_group             = time_to_poll_adc + calibrate_adc,
-	counter_task_group         = time_to_start_counter,
+	counter_task_group         = time_to_start_counter + counter_ready,
 	console_task_group         = console_read_event + console_out_event,
 } task_events_e;
 

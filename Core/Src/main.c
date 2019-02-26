@@ -57,6 +57,8 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "adc.h"
+#include "eeprom.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -83,6 +85,7 @@
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 event_t event;
 /* USER CODE END PV */
 
@@ -94,7 +97,8 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+volatile eeprom_ex_t eeprom_ex_test = { 0 };
+extern const eeprom_ex_t eeprom_ex ;
 /* USER CODE END 0 */
 
 /**
@@ -139,12 +143,12 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   HAL_Delay(5000);
-  HAL_TIM_Base_Start_IT(&htim2);
-  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
-  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
-  HAL_TIM_Base_Start_IT(&htim3);
-   HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_1);
-   HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
+  event_post(&event, time_to_start_counter);
+
+  i2c_bus_eeprom_write(0xA0,0x00,(uint8_t*)&eeprom_ex,sizeof(eeprom_ex));
+  HAL_Delay(1000);
+  i2c_bus_eeprom_read(0xA0,0x00,(uint8_t*)&eeprom_ex_test,sizeof(eeprom_ex_test));
+
   while (1)
   {
     /* USER CODE END WHILE */
@@ -154,9 +158,15 @@ int main(void)
 //	  scheduler_run(&scheduler);
 //	  HAL_Delay(5000);
 	 // event_post(&event, console_out_event);
+
 	  scheduler.event = event_pend(&event);
 	  scheduler_run(&scheduler);
-	  //HAL_Delay(5);
+
+//	  temp_meas();
+
+//	  adc_init();
+	  HAL_Delay(5);
+	  event_post( &event, time_to_poll_adc );
 	//  event_post(&event, console_out_event);
     /* USER CODE BEGIN 3 */
   }

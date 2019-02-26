@@ -49,9 +49,11 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "i2c.h"
-
+#include "stdbool.h"
+#include "eeprom.h"
 /* USER CODE BEGIN 0 */
-
+#define LOW_BYTE(x)     ((unsigned char)((x)&0xFF))
+#define HIGH_BYTE(x)    ((unsigned char)(((x)>>8)&0xFF))
 /* USER CODE END 0 */
 
 I2C_HandleTypeDef hi2c1;
@@ -61,7 +63,7 @@ void MX_I2C1_Init(void)
 {
 
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -128,6 +130,79 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 } 
 
 /* USER CODE BEGIN 1 */
+_Bool i2c_bus_write( uint8_t address, uint8_t opcode, const uint8_t *buffer, uint8_t length ){
+#define 	TIMEOUT 		5
+#define 	OPCODE_SIZE		1
+#define 	I2C_BUFFER_SIZE	5
+
+	_Bool result = false;
+	uint8_t i = 0;
+	uint8_t i2c_buffer[I2C_BUFFER_SIZE] = { 0 };
+
+	i2c_buffer[0] = opcode;
+	for ( i = 0; i < length; ++i )
+		i2c_buffer[i + OPCODE_SIZE] = buffer[i];
+
+	if ( HAL_I2C_Master_Transmit(&hi2c1, address, i2c_buffer, length + OPCODE_SIZE, TIMEOUT) == HAL_OK) result = true;
+
+
+	return result;
+
+}
+
+_Bool i2c_bus_read( uint8_t address, uint8_t opcode, const uint8_t *buffer, uint8_t length ){
+
+	_Bool result = false;
+
+	if ( HAL_I2C_Master_Transmit(&hi2c1, address, &opcode, OPCODE_SIZE, TIMEOUT) == HAL_OK) result = true;
+	if ( HAL_I2C_Master_Receive(&hi2c1, address, buffer, length, TIMEOUT) == HAL_OK) result = true;
+
+	return result;
+}
+
+
+bool i2c_bus_eeprom_write( uint8_t address, uint16_t eeprom_addr, uint8_t *buffer, uint8_t length ){
+
+	bool result = false;
+	uint8_t i = 0;
+	uint8_t i2c_buffer[sizeof(eeprom_ex_t)+2] = { 0 };
+
+	i2c_buffer[0] = HIGH_BYTE( eeprom_addr );
+	i2c_buffer[1] = LOW_BYTE ( eeprom_addr );
+
+
+	for ( i = 2; i < sizeof(i2c_buffer); ++i )
+		i2c_buffer[i] = buffer[i - 2];
+
+	if ( HAL_I2C_Master_Transmit(&hi2c1, address, &i2c_buffer[0], sizeof(i2c_buffer), TIMEOUT*3) == HAL_OK) result = true;
+
+
+	return result;
+
+}
+
+
+
+
+bool i2c_bus_eeprom_read( uint8_t address, uint16_t eeprom_addr, uint8_t *buffer, uint8_t length ){
+
+	bool result = false;
+	uint8_t i = 0;
+	uint8_t i2c_buffer[2] = { 0 };
+
+	i2c_buffer[0] = HIGH_BYTE( eeprom_addr );
+	i2c_buffer[1] = LOW_BYTE ( eeprom_addr );
+
+	if ( HAL_I2C_Master_Transmit(&hi2c1, address, &i2c_buffer[0], 2, TIMEOUT*2) == HAL_OK) result = true;
+	if ( HAL_I2C_Master_Receive(&hi2c1, address, buffer, length, TIMEOUT*3) == HAL_OK) result = true;
+
+	result = true;
+
+	return result;
+
+}
+
+
 
 /* USER CODE END 1 */
 
