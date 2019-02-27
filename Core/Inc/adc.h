@@ -26,12 +26,14 @@
 #define MUX_3 					0b110
 #define MUX_4 					0b111
 
+#define PGA_6					0b000
 #define PGA_4					0b001
 #define PGA_2					0b010
 #define PGA_0					0b111
 
 #define AD1115_1_ADDRESS         0x94
 #define AD1115_2_ADDRESS         0x92
+#define AD1115_3_ADDRESS		 0x90
 
 #define swap_data(x)	( ( ( (uint16_t)(x) << 8 ) & 0xFF00 ) | ( ( (uint16_t)(x) >> 8 ) & 0x00FF  ) )
 
@@ -90,6 +92,8 @@ typedef struct {
 } adc_reg_t;
 
 void adc_init( void );
+void volt_meas( void );
+void temp_meas ( void );
 float calc_temperature( uint8_t channel );
 float calc_dewpoint( float RH, float TA );
 float calculate_temperature( float RT, pt_type_t pt_type );

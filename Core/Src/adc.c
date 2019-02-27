@@ -36,6 +36,10 @@ void adc_init ( void ) {
     i2c_bus_write( AD1115_2_ADDRESS, ads1115.lo_reg, i2c_buffer_lo, ads1115.data_len );
     i2c_bus_write( AD1115_2_ADDRESS, ads1115.hi_reg, i2c_buffer_hi, ads1115.data_len );
 
+    i2c_bus_write( AD1115_3_ADDRESS, ads1115.lo_reg, i2c_buffer_lo, ads1115.data_len );
+	i2c_bus_write( AD1115_3_ADDRESS, ads1115.hi_reg, i2c_buffer_hi, ads1115.data_len );
+
+
 }
 
 //--------------------------------------------------------------------
@@ -327,5 +331,77 @@ void temp_meas ( void ) {
 		meteo.air.humidity = -9999;
 		meteo.air.dew_point = -9999;
 	}
+
+}
+
+void volt_meas( void ) {
+
+	adc_reg_t adc_reg = { 0 };
+
+	if  ( i2c_bus_write( AD1115_2_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len ) ) {
+		HAL_Delay(ads1115.ads_delay);
+		adc_channels[ 2 ].raw_sample.value = 0;
+		if  ( !i2c_bus_read( AD1115_2_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len ) )
+			adc_channels[ 2 ].raw_sample.q.integer = 32767;
+		else adc_channels[ 2 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
+	} else HAL_Delay(ads1115.ads_delay);
+
+	adc_reg.config.bitt.OS = 1;
+	adc_reg.config.bitt.MUX = MUX_1;
+	adc_reg.config.bitt.PGA = PGA_6;
+	adc_reg.config.bitt.MODE = 1;
+	adc_reg.config.bitt.DR = 0;
+	adc_reg.config.bitt.COMP_MODE = 0;
+	adc_reg.config.bitt.COMP_POL = 0;
+	adc_reg.config.bitt.COMP_LAT = 0;
+	adc_reg.config.bitt.COMP_QUE = 0x3;
+
+
+	i2c_bus_write( AD1115_3_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len );       // 1 adc1115 channel
+
+	HAL_Delay( ads1115.ads_delay );
+	adc_channels[ 3 ].raw_sample.value = 0;
+
+	i2c_bus_read( AD1115_3_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len );
+	adc_channels[ 3 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
+	if ( ( ( adc_channels[ 3 ].raw_sample.q.integer ) >> 15  ) & 0x1 )
+		adc_channels[ 3 ].raw_sample.q.integer = 0;
+
+	median_filter( (sample_t *) &adc_channels[ 3 ] );
+	ema_filter( (fixed_t *) &adc_channels[ 3 ].raw_sample, (fixed_t *) &adc_channels[ 3 ].avg_sample );
+
+
+
+	adc_reg.config.bitt.MUX = MUX_2;
+	i2c_bus_write( AD1115_3_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len );      // 2 adc1115 channel
+
+	HAL_Delay( ads1115.ads_delay );
+	adc_channels[ 5 ].raw_sample.value = 0;
+
+	i2c_bus_read( AD1115_3_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len );
+	adc_channels[ 5 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
+	if ( ( ( adc_channels[ 5 ].raw_sample.q.integer ) >> 15  ) & 0x1 )
+	  adc_channels[ 5 ].raw_sample.q.integer = 0;
+
+	median_filter( (sample_t *) &adc_channels[ 5 ] );
+	ema_filter( (fixed_t *) &adc_channels[ 5 ].raw_sample, (fixed_t *) &adc_channels[ 5 ].avg_sample );
+
+
+
+	adc_reg.config.bitt.MUX = MUX_3;
+	i2c_bus_write( AD1115_3_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len );      // 3 adc1115 channel
+
+	HAL_Delay( ads1115.ads_delay );
+	adc_channels[ 4 ].raw_sample.value = 0;
+
+	i2c_bus_read( AD1115_3_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len );
+	adc_channels[ 4 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
+	if ( ( ( adc_channels[ 4 ].raw_sample.q.integer ) >> 15  ) & 0x1 )
+	  adc_channels[ 4 ].raw_sample.q.integer = 0;
+
+	median_filter( (sample_t *) &adc_channels[ 4 ] );
+	ema_filter( (fixed_t *) &adc_channels[ 4 ].raw_sample, (fixed_t *) &adc_channels[ 4 ].avg_sample );
+
+
 
 }

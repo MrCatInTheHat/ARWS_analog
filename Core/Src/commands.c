@@ -51,86 +51,11 @@
 extern event_t event;
 extern meteo_t meteo;
 extern volatile sample_t adc_channels[ 9 ];
+extern wgauge_t wind_gauge;
 /***************** Variable Initialization Block End **********/
 
 
 #define FROUND(x) ((x) >= 0.0 ? (x) + 0.005 : (x) - 0.005)
-
-typedef union {
-    int32_t l;
-    float f;
-} lf_t;
-
-size_t ftostr( float f, char *outbuf, size_t precision )
-{
-    lf_t x;
-    char *p = outbuf;
-
-    x.f = f;
-
-    int8_t exp2 = (x.l >> 23);
-    uint32_t mantissa = (x.l & 0x7FFFFF); // 0x7FFFFF = ((1 << 23) - 1)
-
-    if ( exp2 == -1 ) { // ((1 << 8) - 1)
-        if ( mantissa == 0 ) {
-            if ( x.l < 0 ) *p++ = '-';
-            *p++ = 'i';
-            *p++ = 'n';
-            *p++ = 'f';
-        }
-        else {
-            *p++ = 'n';
-            *p++ = 'a';
-            *p++ = 'n';
-        }
-	*p = 0;
-        return 0;
-    }
-
-    exp2 -= 127; // 127 = ((1 << 8) >> 1) - 1
-    mantissa |= 0x800000; // 0x800000 = (1 << 23)
-    uint32_t frac_part = 0;
-    uint32_t int_part = 0;
-
-    if ( exp2 >= 23 ) {
-        int_part = mantissa << (exp2 - 23);
-    }
-    else if ( exp2 >= 0 ) {
-        int_part = mantissa >> (23 - exp2);
-        frac_part = (mantissa << (exp2 + 1)) & 0xFFFFFF; // 0xFFFFFF = (1 << (23 + 1)) - 1
-    }
-    else { // if ( exp2 < 0 )
-        frac_part = (mantissa  & 0xFFFFFF) >> -(exp2 + 1); // 0xFFFFFF = (1 << (23 + 1)) - 1
-    }
-
-    if ( x.l < 0 ) *p++ = '-';
-
-    if ( int_part == 0 ) {
-        *p++ = '0';
-    }
-    else {
-        utoa( p, int_part, 10 );
-        while ( *p ) p++;
-    }
-
-    if ( precision != 0 ) *p++ = '.';
-
-
-    size_t max = precision;
-
-    for ( size_t m = 0; m < max; ++m ) {
-        // frac_part *= 10;
-        frac_part = (frac_part << 3) + (frac_part << 1);
-        *p++ = (char) (frac_part >> 24) + '0';  // 24 = (23 + 1)
-        frac_part &= 0xFFFFFF;  // 0xFFFFFF = (1 << (23 + 1)) - 1
-    }
-
-
-
-    *p = 0;
-    return (size_t) (p - outbuf);
-}
-
 
 /***************** Fucntion Declaration Block Begin ***********/
 
@@ -233,6 +158,30 @@ uint8_t command_test( uint8_t argc, char *argv[] )
 
 	            }
 
+
+	int8_t index = wind_gauge.index - 1;
+	                    if ( index < 0 ) index = LENGTH( wind_gauge.samples ) - 1;
+	                    float F = (float) wind_gauge.samples[ index ] * (1 / 60.0);
+	                    char f_strbuf[ 10 ];
+	                    gcvt( F + 0.005, 7, f_strbuf );
+
+	                    printf(
+	                        "CH3:   % 6u [raw] % 5u [avg] % 7u [mV]\r\n"
+	                        "CH4:   % 6u [raw] % 5u [avg] % 7u [mV]\r\n"
+	                        "CH5:   % 6u [raw] % 5u [avg] % 7u [mV]\r\n"
+	                        "CH6:   % 6u [raw] % 5s [Hz]\r\n\r\n",
+	                        adc_channels[ 3 ].raw_sample.q.integer,
+	                        adc_channels[ 3 ].avg_sample.q.integer,
+	                        (uint16_t) (((uint32_t) adc_channels[ 3 ].avg_sample.q.integer * 6144 + (32768 >> 1)) / 32768),
+	                        adc_channels[ 5 ].raw_sample.q.integer,
+	                        adc_channels[ 5 ].avg_sample.q.integer,
+	                        (uint16_t) (((uint32_t) adc_channels[ 5 ].avg_sample.q.integer * 6144 + (32768 >> 1)) / 32768),
+	                        adc_channels[ 4 ].raw_sample.q.integer,
+	                        adc_channels[ 4 ].avg_sample.q.integer,
+	                        (uint16_t) (((uint32_t) adc_channels[ 4 ].avg_sample.q.integer * 6144 + (32768 >> 1)) / 32768),
+	                        wind_gauge.samples[ index ],
+	                        f_strbuf
+	                    );
 
     return CR_DONE;
 }

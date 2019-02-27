@@ -28,7 +28,8 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 extern console_t console;
 extern event_t event;
 
-meteo_t meteo = { 0 };
+volatile meteo_t meteo = { 0 };
+volatile wgauge_t wind_gauge;
 
 #define LENGTH(x)           ( sizeof( (x) ) / sizeof( (x)[ 0 ] ) )
 
@@ -59,6 +60,7 @@ void task_adc ( struct task_t * task )
           case time_to_poll_adc:
 
         	  temp_meas();
+        	  volt_meas();
 
               break;
 
@@ -82,7 +84,7 @@ void task_counter ( struct task_t * task )
 {
 
     uint8_t event_flag = 1;
-    static wgauge_t wind_gauge;
+
 
     task->state = idle_state;
 

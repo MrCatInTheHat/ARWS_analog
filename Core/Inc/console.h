@@ -60,7 +60,7 @@ extern "C" {
 #define CLI_MSG_LINK_CLOSED     "\r\nLINK CLOSED"
 #define CLI_MSG_LINE_BUSY       "LINE IS BUSY, TRY AGAIN LATER\r\n" // Lines are temporarily busy, please try again later,
 /***************** Defines Block End **************************/
-
+#define LENGTH(x)           ( sizeof( (x) ) / sizeof( (x)[ 0 ] ) )
 /***************** Structures Define Block Begin **************/
 typedef volatile struct {
     uint8_t *buffer;    //!< the physical memory address where the buffer is stored

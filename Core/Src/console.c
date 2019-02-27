@@ -40,7 +40,7 @@
 #include "stdio.h"
 #include "stm32f1xx_hal.h"
 
-#define LENGTH(x)           ( sizeof( (x) ) / sizeof( (x)[ 0 ] ) )
+
 	
 //extern char	toupper(char);
 //extern char	tolower(char);
