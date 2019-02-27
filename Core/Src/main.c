@@ -97,8 +97,8 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-volatile eeprom_ex_t eeprom_ex_test = { 0 };
-extern const eeprom_ex_t eeprom_ex ;
+//volatile eeprom_ex_t eeprom_ex_test = { 0 };
+//extern const eeprom_ex_t eeprom_ex ;
 /* USER CODE END 0 */
 
 /**
@@ -137,6 +137,7 @@ int main(void)
   MX_TIM3_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  scheduler.state = active_state;
   scheduler_init(&scheduler);
   /* USER CODE END 2 */
 
@@ -144,30 +145,17 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   HAL_Delay(5000);
   event_post(&event, time_to_start_counter);
-
-  i2c_bus_eeprom_write(0xA0,0x00,(uint8_t*)&eeprom_ex,sizeof(eeprom_ex));
-  HAL_Delay(1000);
-  i2c_bus_eeprom_read(0xA0,0x00,(uint8_t*)&eeprom_ex_test,sizeof(eeprom_ex_test));
+  event_post( &event, time_to_poll_adc_ch1 );
+//  i2c_bus_eeprom_write(0xA0,0x00,(uint8_t*)&eeprom_ex,sizeof(eeprom_ex));
+ // HAL_Delay(1000);
+  //i2c_bus_eeprom_read(0xA0,0x00,(uint8_t*)&eeprom_ex_test,sizeof(eeprom_ex_test));
 
   while (1)
   {
     /* USER CODE END WHILE */
-//
-//	  event_post(&event, console_read_event);
-//	  scheduler.event = event_pend(&event);
-//	  scheduler_run(&scheduler);
-//	  HAL_Delay(5000);
-	 // event_post(&event, console_out_event);
-
 	  scheduler.event = event_pend(&event);
 	  scheduler_run(&scheduler);
-
-//	  temp_meas();
-
-//	  adc_init();
 	  HAL_Delay(5);
-	  event_post( &event, time_to_poll_adc );
-	//  event_post(&event, console_out_event);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

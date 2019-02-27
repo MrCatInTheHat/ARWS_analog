@@ -107,81 +107,86 @@ uint8_t command_test( uint8_t argc, char *argv[] )
 {
 
     // operate only in off-line mode
-
+	event_post(&event, timer_5_seconds);
 	//flash read
 	for ( uint8_t channel = 0; channel < 3; ++channel ) {
-	                float RT;
-	                float T;
-	                if ( adc_channels[ channel ].raw_sample.q.integer == INT16_MIN ) {
-	                    adc_channels[ channel ].avg_sample.value = 0;
-	                    RT = -999.99;
-	                    T = -999.99;
-	                }
-	                else {
-	#define     CUR_OFFSET          6
-	#define     CUR_EE_OFFSET       3
-	                    int16_t offset;
-	                    uint16_t coefficient;
-	                    float pga;
-	                    pt_type_t pt_type;
+		float RT;
+		float T;
+		if ( adc_channels[ channel ].raw_sample.q.integer == INT16_MIN ) {
+			adc_channels[ channel ].avg_sample.value = 0;
+			RT = -999.99;
+			T = -999.99;
+		}
+		else {
+		#define     CUR_OFFSET          6
+		#define     CUR_EE_OFFSET       3
 
-	                    e2prom_ex_read ( pt_sensors[ channel ].offset, (uint8_t *) &offset );
-	                    int16_t Z_sens = adc_channels[ channel ].avg_sample.q.integer - offset;
+			int16_t offset;
+			uint16_t coefficient;
+			float pga;
+			pt_type_t pt_type;
 
-	                    uint8_t channel_cur = channel + CUR_OFFSET;
-	                    uint8_t channel_ee = channel + CUR_EE_OFFSET;
+			e2prom_ex_read ( pt_sensors[ channel ].offset, (uint8_t *) &offset );
+			int16_t Z_sens = adc_channels[ channel ].avg_sample.q.integer - offset;
 
-	                    e2prom_ex_read ( pt_sensors[ channel_ee ].offset, (uint8_t *) &offset );
-	                    int16_t Z_cur = adc_channels[ channel_cur ].avg_sample.q.integer - offset;
+			uint8_t channel_cur = channel + CUR_OFFSET;
+			uint8_t channel_ee = channel + CUR_EE_OFFSET;
 
-	                    e2prom_ex_read ( pt_sensors[ channel ].pga, (uint8_t *) &pga );
-	                    e2prom_ex_read ( pt_sensors[ channel ].pt_type, (uint8_t *) &pt_type );
+			e2prom_ex_read ( pt_sensors[ channel_ee ].offset, (uint8_t *) &offset );
+			int16_t Z_cur = adc_channels[ channel_cur ].avg_sample.q.integer - offset;
 
-	                    RT = calculate_resistance( Z_cur, Z_sens, pga, pt_type );
-	                    T = calculate_temperature( RT, pt_type );
-	                }
+			e2prom_ex_read ( pt_sensors[ channel ].pga, (uint8_t *) &pga );
+			e2prom_ex_read ( pt_sensors[ channel ].pt_type, (uint8_t *) &pt_type );
 
-	                char rt_strbuf[ 10 ];
-	                char t_strbuf[ 10 ];
-	                //ftostr( FROUND( RT ), rt_strbuf, 2 );
-	                //ftostr( FROUND( T ), t_strbuf, 2 );
-	                gcvt(FROUND(RT), 7, rt_strbuf);
-	                gcvt(FROUND(T), 7, t_strbuf);
+			RT = calculate_resistance( Z_cur, Z_sens, pga, pt_type );
+			T = calculate_temperature( RT, pt_type );
+		}
 
-	                printf( "CH%hu: % 6d [raw] % 6d [avg] % 7s [ohm] % 7s [C]\r\n",
-	                    channel,
-	                    adc_channels[ channel ].raw_sample.q.integer,
-	                    adc_channels[ channel ].avg_sample.q.integer,
-	                    rt_strbuf,
-	                    t_strbuf
-	                );
+		char rt_strbuf[ 10 ];
+		char t_strbuf[ 10 ];
+		//ftostr( FROUND( RT ), rt_strbuf, 2 );
+		//ftostr( FROUND( T ), t_strbuf, 2 );
+		if ( RT < 100 ) gcvt(FROUND(RT), 5, rt_strbuf);
+		else gcvt(FROUND(RT), 6, rt_strbuf);
+		if ( ( T < 10 ) && ( T > -10 ) ) gcvt(FROUND(T), 3, t_strbuf);
+		else gcvt(FROUND(T), 4, t_strbuf);
 
-	            }
+		printf( "CH%hu: % 6d [raw] % 6d [avg] % 7s [ohm] % 7s [C]\r\n",
+			channel,
+			adc_channels[ channel ].raw_sample.q.integer,
+			adc_channels[ channel ].avg_sample.q.integer,
+			rt_strbuf,
+			t_strbuf
+		);
+
+	}
 
 
 	int8_t index = wind_gauge.index - 1;
-	                    if ( index < 0 ) index = LENGTH( wind_gauge.samples ) - 1;
-	                    float F = (float) wind_gauge.samples[ index ] * (1 / 60.0);
-	                    char f_strbuf[ 10 ];
-	                    gcvt( F + 0.005, 7, f_strbuf );
+	if ( index < 0 ) index = LENGTH( wind_gauge.samples ) - 1;
+	float F = (float) wind_gauge.samples[ index ] * (1 / 60.0);
+	char f_strbuf[ 10 ];
+	if ( F < 10 ) gcvt( F + 0.005, 3, f_strbuf );
+	else gcvt( F + 0.005, 4, f_strbuf );
 
-	                    printf(
-	                        "CH3:   % 6u [raw] % 5u [avg] % 7u [mV]\r\n"
-	                        "CH4:   % 6u [raw] % 5u [avg] % 7u [mV]\r\n"
-	                        "CH5:   % 6u [raw] % 5u [avg] % 7u [mV]\r\n"
-	                        "CH6:   % 6u [raw] % 5s [Hz]\r\n\r\n",
-	                        adc_channels[ 3 ].raw_sample.q.integer,
-	                        adc_channels[ 3 ].avg_sample.q.integer,
-	                        (uint16_t) (((uint32_t) adc_channels[ 3 ].avg_sample.q.integer * 6144 + (32768 >> 1)) / 32768),
-	                        adc_channels[ 5 ].raw_sample.q.integer,
-	                        adc_channels[ 5 ].avg_sample.q.integer,
-	                        (uint16_t) (((uint32_t) adc_channels[ 5 ].avg_sample.q.integer * 6144 + (32768 >> 1)) / 32768),
-	                        adc_channels[ 4 ].raw_sample.q.integer,
-	                        adc_channels[ 4 ].avg_sample.q.integer,
-	                        (uint16_t) (((uint32_t) adc_channels[ 4 ].avg_sample.q.integer * 6144 + (32768 >> 1)) / 32768),
-	                        wind_gauge.samples[ index ],
-	                        f_strbuf
-	                    );
+
+	printf(
+		"CH3:   % 6u [raw] % 5u [avg] % 7u [mV]\r\n"
+		"CH4:   % 6u [raw] % 5u [avg] % 7u [mV]\r\n"
+		"CH5:   % 6u [raw] % 5u [avg] % 7u [mV]\r\n"
+		"CH6:   % 6u [raw] % 5s [Hz]\r\n\r\n\r\n",
+		adc_channels[ 3 ].raw_sample.q.integer,
+		adc_channels[ 3 ].avg_sample.q.integer,
+		(uint16_t) (((uint32_t) adc_channels[ 3 ].avg_sample.q.integer * 6144 + (32768 >> 1)) / 32768),
+		adc_channels[ 5 ].raw_sample.q.integer,
+		adc_channels[ 5 ].avg_sample.q.integer,
+		(uint16_t) (((uint32_t) adc_channels[ 5 ].avg_sample.q.integer * 6144 + (32768 >> 1)) / 32768),
+		adc_channels[ 4 ].raw_sample.q.integer,
+		adc_channels[ 4 ].avg_sample.q.integer,
+		(uint16_t) (((uint32_t) adc_channels[ 4 ].avg_sample.q.integer * 6144 + (32768 >> 1)) / 32768),
+		wind_gauge.samples[ index ],
+		f_strbuf
+	);
 
     return CR_DONE;
 }

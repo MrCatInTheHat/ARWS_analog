@@ -13,12 +13,12 @@
 #include "math.h"
 
 ads1115_t ads1115 = {
-		150,
-		0x02,
-		0x03,
-		0x00,
-		0x01,
-		0x02
+		150,	// ads_delay
+		0x02,	// lo_reg
+		0x03,	// hi_reg
+		0x00,	// conv_reg
+		0x01,	// conf_reg
+		0x02	// data_len
 };
 
 
@@ -192,14 +192,17 @@ void temp_meas ( void ) {
 	adc_reg.config.bitt.COMP_QUE = 0x3;
 
 	//1 - 1
+
 	if  ( i2c_bus_write( AD1115_1_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len ) ) {
 		HAL_Delay(ads1115.ads_delay);
 		adc_channels[ 6 ].raw_sample.value = 0;
 		if  ( !i2c_bus_read( AD1115_1_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len ) )
 			adc_channels[ 6 ].raw_sample.q.integer = 32767;
 		else adc_channels[ 6 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
-	} else HAL_Delay(ads1115.ads_delay);
+	}// else HAL_Delay(ads1115.ads_delay);
+
 	//1 - 2
+
 	adc_reg.config.bitt.MUX = MUX_2;
 	adc_reg.config.bitt.PGA = PGA_0;
 
@@ -209,8 +212,10 @@ void temp_meas ( void ) {
 		if  ( !i2c_bus_read( AD1115_1_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len ) )
 			adc_channels[ 0 ].raw_sample.q.integer = 32767;
 		else adc_channels[ 0 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
-	} else HAL_Delay(ads1115.ads_delay);
+	} //else HAL_Delay(ads1115.ads_delay);
+
 	//1 - 3
+
 	adc_reg.config.bitt.MUX = MUX_3;
 	adc_reg.config.bitt.PGA = PGA_4;
 
@@ -220,8 +225,10 @@ void temp_meas ( void ) {
 		if  ( !i2c_bus_read( AD1115_1_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len ) )
 			adc_channels[ 7 ].raw_sample.q.integer = 32767;
 		else adc_channels[ 7 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
-	} else HAL_Delay(ads1115.ads_delay);
+	}// else HAL_Delay(ads1115.ads_delay);
+
 	//1-4
+
 	adc_reg.config.bitt.MUX = MUX_4;
 	adc_reg.config.bitt.PGA = PGA_0;
 
@@ -231,8 +238,10 @@ void temp_meas ( void ) {
 		if  ( !i2c_bus_read( AD1115_1_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len ) )
 			adc_channels[ 1 ].raw_sample.q.integer = 32767;
 		else adc_channels[ 1 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
-	} else HAL_Delay(ads1115.ads_delay);
+	}// else HAL_Delay(ads1115.ads_delay);
+
 	//2 - 1
+
 	adc_reg.config.bitt.MUX = MUX_3;
 	adc_reg.config.bitt.PGA = PGA_4;
 
@@ -242,8 +251,10 @@ void temp_meas ( void ) {
 		if  ( !i2c_bus_read( AD1115_2_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len ) )
 			adc_channels[ 8 ].raw_sample.q.integer = 32767;
 		else adc_channels[ 8 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
-	} else HAL_Delay(ads1115.ads_delay);
+	}// else HAL_Delay(ads1115.ads_delay);
+
 	//2 - 2
+
 	adc_reg.config.bitt.MUX = MUX_4;
 	adc_reg.config.bitt.PGA = PGA_0;
 
@@ -253,7 +264,7 @@ void temp_meas ( void ) {
 		if  ( !i2c_bus_read( AD1115_2_ADDRESS, ads1115.conv_reg, (uint8_t *) &adc_reg.conv.data, ads1115.data_len ) )
 			adc_channels[ 2 ].raw_sample.q.integer = 32767;
 		else adc_channels[ 2 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
-	} else HAL_Delay(ads1115.ads_delay);
+	}// else HAL_Delay(ads1115.ads_delay);
 
 
 
@@ -279,7 +290,7 @@ void temp_meas ( void ) {
 	// T_air
 	if ( adc_channels[ 0 ].raw_sample.q.integer != 32767 ) {
 		air_temperature = calc_temperature( 0 );
-		meteo.air.temperature = (int16_t) round( air_temperature );
+		meteo.air.temperature = (int16_t) round( calc_temperature( 0 ) );
 	}
 	else {
 		meteo.air.temperature = -9999;

@@ -265,8 +265,16 @@ void TIM3_IRQHandler(void)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 
+
+
 	if ( htim->Instance == TIM2) {
 		event_post(&event, counter_ready);
+	}
+
+	if ( htim->Instance == TIM3) {
+		event_post(&event, console_test_command);
+		HAL_TIM_Base_Stop_IT(&htim3);
+
 	}
 
 

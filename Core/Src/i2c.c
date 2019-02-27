@@ -187,7 +187,6 @@ bool i2c_bus_eeprom_write( uint8_t address, uint16_t eeprom_addr, uint8_t *buffe
 bool i2c_bus_eeprom_read( uint8_t address, uint16_t eeprom_addr, uint8_t *buffer, uint8_t length ){
 
 	bool result = false;
-	uint8_t i = 0;
 	uint8_t i2c_buffer[2] = { 0 };
 
 	i2c_buffer[0] = HIGH_BYTE( eeprom_addr );

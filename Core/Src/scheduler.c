@@ -49,20 +49,26 @@ inline static uint16_t round_div_u16( uint16_t x, uint16_t y )
 void task_adc ( struct task_t * task )
 {
 
-    uint8_t event_flag = 1;
+    uint32_t event_flag = 1;
 
-    task->state = idle_state;
 
     while ( task->event ) {
 
           switch( task->event & event_flag ){
 
-          case time_to_poll_adc:
+          case time_to_poll_adc_ch1:
 
         	  temp_meas();
-        	  volt_meas();
+        	  event_post(&event, time_to_poll_adc_ch4);
 
               break;
+
+          case time_to_poll_adc_ch4:
+
+			  volt_meas();
+			  event_post(&event, time_to_poll_adc_ch1);
+
+		   break;
 
           case calibrate_adc:
 
@@ -83,10 +89,8 @@ void task_adc ( struct task_t * task )
 void task_counter ( struct task_t * task )
 {
 
-    uint8_t event_flag = 1;
+	uint32_t event_flag = 1;
 
-
-    task->state = idle_state;
 
     while ( task->event ) {
 
@@ -103,9 +107,16 @@ void task_counter ( struct task_t * task )
 
               break;
 
+
+          case timer_5_seconds:
+
+        	  if ( task->state == test_state )
+        	  HAL_TIM_Base_Start_IT(&htim3);
+
+              break;
+
+
           case counter_ready:
-
-
 
 
         	  wind_gauge.total_sum_15 -= wind_gauge.samples[ wind_gauge.index_15 ];
@@ -164,13 +175,13 @@ void task_counter ( struct task_t * task )
 void task_console ( struct task_t * task )
 {
 
-    uint8_t event_flag = 1;
+	uint32_t event_flag = 1;
     uint8_t buffer[] = "Hello, kitty!";
     uint8_t buffer_obama[] = "obama!";
 	static cmd_type_t command_type;
 	static uint8_t result = CR_ERROR;
 
-    task->state = idle_state;
+    //task->state = idle_state;
 
     while ( task->event ) {
 
@@ -197,6 +208,13 @@ void task_console ( struct task_t * task )
         	  //CDC_Transmit_FS(buffer,sizeof(buffer) );
               break;
 
+          case console_test_command:
+
+        	  if ( task->state == test_state )
+        	  command_test( console.state, console.input_buffer );
+
+			  break;
+
 
           default:
 
@@ -212,37 +230,42 @@ void task_console ( struct task_t * task )
 
 void scheduler_init( scheduler_t *scheduler_p ){
 
-	scheduler_p->task[0].task = adc_task;
-	scheduler_p->task[0].priority = medium_prior;
-	scheduler_p->task[0].callback = &task_adc;
-	scheduler_p->task[0].event_group = adc_task_group;
+	scheduler_p->task[0].task = console_task;
+	scheduler_p->task[0].priority = high_prior;
+	scheduler_p->task[0].callback = &task_console;
+	scheduler_p->task[0].event_group = console_task_group;
+	scheduler_p->task[0].state = scheduler_p->state;
 
 	scheduler_p->task[1].task = counter_task;
 	scheduler_p->task[1].priority = low_prior;
 	scheduler_p->task[1].callback = &task_counter;
 	scheduler_p->task[1].event_group = counter_task_group;
+	scheduler_p->task[1].state = scheduler_p->state;
 
-	scheduler_p->task[2].task = console_task;
-	scheduler_p->task[2].priority = high_prior;
-	scheduler_p->task[2].callback = &task_console;
-	scheduler_p->task[2].event_group = console_task_group;
+	scheduler_p->task[2].task = adc_task;
+	scheduler_p->task[2].priority = medium_prior;
+	scheduler_p->task[2].callback = &task_adc;
+	scheduler_p->task[2].event_group = adc_task_group;
+	scheduler_p->task[2].state = scheduler_p->state;
 
 	console_init();
 
 	adc_init();
 
-	adc_init();
 }
 
 
 void scheduler_run( scheduler_t *scheduler_p ){
-    uint8_t i = 0;
+	uint32_t i = 0;
 
+	if ( scheduler_p->event & timer_5_seconds ) scheduler_p->state = test_state;
+	else if ( scheduler_p->event & console_read_event ) scheduler_p->state = active_state;
 
     while ( scheduler_p->event ) {
 
         if ( scheduler_p->event & scheduler_p->task[i].event_group ) {
 
+        	scheduler_p->task[i].state = scheduler_p->state;
             scheduler_p->task[i].event = scheduler_p->event & scheduler_p->task[i].event_group;
             scheduler_p->task[i].callback(&scheduler_p->task[i]);
         }
