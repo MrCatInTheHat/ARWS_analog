@@ -59,6 +59,7 @@ extern "C" {
 #define CLI_MSG_LINK_OPENED     "LINK OPENED\r\n"
 #define CLI_MSG_LINK_CLOSED     "\r\nLINK CLOSED"
 #define CLI_MSG_LINE_BUSY       "LINE IS BUSY, TRY AGAIN LATER\r\n" // Lines are temporarily busy, please try again later,
+#define CLI_MSG_SESSION_ERROR  "\r\nERROR\r\n"
 /***************** Defines Block End **************************/
 #define LENGTH(x)           ( sizeof( (x) ) / sizeof( (x)[ 0 ] ) )
 /***************** Structures Define Block Begin **************/

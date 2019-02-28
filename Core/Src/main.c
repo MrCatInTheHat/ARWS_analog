@@ -146,16 +146,16 @@ int main(void)
   HAL_Delay(5000);
   event_post(&event, time_to_start_counter);
   event_post( &event, time_to_poll_adc_ch1 );
-//  i2c_bus_eeprom_write(0xA0,0x00,(uint8_t*)&eeprom_ex,sizeof(eeprom_ex));
+ // i2c_bus_eeprom_write(0xA0,0x00,(uint8_t*)&eeprom_ex,sizeof(eeprom_ex));
  // HAL_Delay(1000);
-  //i2c_bus_eeprom_read(0xA0,0x00,(uint8_t*)&eeprom_ex_test,sizeof(eeprom_ex_test));
+//  i2c_bus_eeprom_read(0xA0,0x00,(uint8_t*)&eeprom_ex_test,sizeof(eeprom_ex_test));
 
   while (1)
   {
     /* USER CODE END WHILE */
 	  scheduler.event = event_pend(&event);
 	  scheduler_run(&scheduler);
-	  HAL_Delay(5);
+//	  HAL_Delay(5);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

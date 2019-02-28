@@ -368,7 +368,8 @@ void volt_meas( void ) {
 	adc_reg.config.bitt.COMP_QUE = 0x3;
 
 
-	i2c_bus_write( AD1115_3_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len );       // 1 adc1115 channel
+	i2c_bus_write( AD1115_3_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len );
+	// 1 adc1115 channel
 
 	HAL_Delay( ads1115.ads_delay );
 	adc_channels[ 3 ].raw_sample.value = 0;
@@ -384,7 +385,8 @@ void volt_meas( void ) {
 
 
 	adc_reg.config.bitt.MUX = MUX_2;
-	i2c_bus_write( AD1115_3_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len );      // 2 adc1115 channel
+	i2c_bus_write( AD1115_3_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len );
+	// 2 adc1115 channel
 
 	HAL_Delay( ads1115.ads_delay );
 	adc_channels[ 5 ].raw_sample.value = 0;
@@ -400,7 +402,8 @@ void volt_meas( void ) {
 
 
 	adc_reg.config.bitt.MUX = MUX_3;
-	i2c_bus_write( AD1115_3_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len );      // 3 adc1115 channel
+	i2c_bus_write( AD1115_3_ADDRESS, ads1115.conf_reg, (uint8_t *) &adc_reg.config.all, ads1115.data_len );
+	// 3 adc1115 channel
 
 	HAL_Delay( ads1115.ads_delay );
 	adc_channels[ 4 ].raw_sample.value = 0;

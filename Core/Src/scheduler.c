@@ -176,12 +176,9 @@ void task_console ( struct task_t * task )
 {
 
 	uint32_t event_flag = 1;
-    uint8_t buffer[] = "Hello, kitty!";
-    uint8_t buffer_obama[] = "obama!";
 	static cmd_type_t command_type;
 	static uint8_t result = CR_ERROR;
 
-    //task->state = idle_state;
 
     while ( task->event ) {
 
@@ -203,9 +200,7 @@ void task_console ( struct task_t * task )
               break;
 
           case console_out_event:
-        	  USBD_CDC_SetTxBuffer(&hUsbDeviceFS,buffer,sizeof(buffer));
-			  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
-        	  //CDC_Transmit_FS(buffer,sizeof(buffer) );
+
               break;
 
           case console_test_command:

@@ -162,7 +162,7 @@ _Bool i2c_bus_read( uint8_t address, uint8_t opcode, const uint8_t *buffer, uint
 
 
 bool i2c_bus_eeprom_write( uint8_t address, uint16_t eeprom_addr, uint8_t *buffer, uint8_t length ){
-
+#define ADDRESS_SIZE  2
 	bool result = false;
 	uint8_t i = 0;
 	uint8_t i2c_buffer[sizeof(eeprom_ex_t)+2] = { 0 };
@@ -174,7 +174,7 @@ bool i2c_bus_eeprom_write( uint8_t address, uint16_t eeprom_addr, uint8_t *buffe
 	for ( i = 2; i < sizeof(i2c_buffer); ++i )
 		i2c_buffer[i] = buffer[i - 2];
 
-	if ( HAL_I2C_Master_Transmit(&hi2c1, address, &i2c_buffer[0], sizeof(i2c_buffer), TIMEOUT*3) == HAL_OK) result = true;
+	if ( HAL_I2C_Master_Transmit(&hi2c1, address, &i2c_buffer[0], length + ADDRESS_SIZE, TIMEOUT*3) == HAL_OK) result = true;
 
 
 	return result;

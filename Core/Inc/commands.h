@@ -74,6 +74,8 @@ uint8_t command_open( uint8_t argc, char *argv[] );
 uint8_t command_close( uint8_t argc, char *argv[] );
 uint8_t command_wind( uint8_t argc, char *argv[] );
 uint8_t command_test( uint8_t argc, char *argv[] );
+uint8_t command_air( uint8_t argc, char *argv[] );
+uint8_t command_calibrate( uint8_t argc, char *argv[] );
 /***************** Function Initialization Block End **********/	
 
 		

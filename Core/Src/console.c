@@ -82,6 +82,12 @@ const console_command_t g_command_list[] = {
 		CT_ONLINE
 	},
 	{
+		(const char *) "CALIBRATE",
+		command_calibrate,
+		"CALIBRATE", // CALIBRATE SENSORS
+		CT_ONLINE
+	},
+	{
         (const char *) "CLOSE",
         command_close,
         "CLOSE CONSOLE", // AUTOMATIC COMMUNICATION/OFFLINE MODE

@@ -46,12 +46,14 @@
 #include "eeprom.h"
 #include "dsp.h"
 #include "adc.h"
+#include "ctype.h"
 
 /***************** Variable Initialization Block Begin ********/
 extern event_t event;
 extern meteo_t meteo;
 extern volatile sample_t adc_channels[ 9 ];
 extern wgauge_t wind_gauge;
+
 /***************** Variable Initialization Block End **********/
 
 
@@ -191,6 +193,190 @@ uint8_t command_test( uint8_t argc, char *argv[] )
     return CR_DONE;
 }
 
+
+static inline float calc_humidity( uint8_t channel )
+{
+    #define MAX_CODE        32767                           // max code ADS1115
+    #define V_REF           6.144                           // Reference Voltage; Vout = code*Vref/maxcode
+    #define V_HUM_LOW       0.8                             // humidity's sensor low voltage
+    #define V_SUP           5.0                             // Supply Voltage
+    #define COEF_ADD        V_SUP*MAX_CODE*0.16/V_REF       // Divider coefficient
+    #define COEF_DIV        V_SUP*MAX_CODE*0.0062           // Divider coefficient
+    #define TRUE_COEF1      COEF_DIV*1.0546                 // True_RH divider 1 coefficient
+    #define TRUE_COEF2      COEF_DIV*0.000216               // True_RH divider 2 coefficient; !! temperature is x10 already
+    #define HUM_LOW_LVL     800 * MAX_CODE / ( V_REF * 1000)// V_HUM_LOW * MAX_CODE / V_REF
+
+    float air_humidity;
+
+    if ( adc_channels[ 3 ].avg_sample.q.integer < HUM_LOW_LVL ) { // U < 0.8V
+        air_humidity = 0.0;
+    }
+    else {
+        air_humidity = ( (float) adc_channels[ channel ].avg_sample.q.integer ) - COEF_ADD;
+        air_humidity = air_humidity / ( TRUE_COEF1 - TRUE_COEF2 * (float) meteo.air.temperature ); // !!! air_temperature = T x 10
+        air_humidity = air_humidity * V_REF + 0.05; // fround
+    }
+
+    return air_humidity;
+}
+
+uint8_t command_calibrate( uint8_t argc, char *argv[] )
+{
+
+
+#define HUMIDIY_CAL_CHANNEL 3
+   int16_t humidity;
+   int16_t correction;
+
+   if ( argc > 1 ) {
+
+       char sid = toupper( *argv[ 1 ] );
+
+       switch ( sid ) {
+       case 'T':
+           sid = argv[ 1 ][ 1 ];
+           if ( argc == 2 && sid != '\0' && argv[ 1 ][ 2 ] == '\0' ) {
+
+        	   uint32_t channel_number;
+               if ( isdigit( sid ) && (channel_number = sid - '0') < 3 ) {
+            	   int16_t offset = adc_channels[ channel_number ].avg_sample.q.integer;
+
+				   if ( !e2prom_ex_write(pt_sensors[channel_number].offset, (uint8_t *) &offset) ) {
+					   goto ERROR;
+				   }
+
+				   e2prom_ex_read ( pt_sensors[ channel_number ].offset, (uint8_t *) &offset );
+				   printf("T%hu: %d\t%d\r\n",
+					channel_number,
+					adc_channels[ channel_number ].avg_sample.q.integer,
+					offset
+					);
+               }
+               else if ( toupper( sid ) == 'A' ) {
+                   int16_t offsets[ 3 ];
+                   offsets[ 0 ] = adc_channels[ 0 ].avg_sample.q.integer;
+                   offsets[ 1 ] = adc_channels[ 1 ].avg_sample.q.integer;
+                   offsets[ 2 ] = adc_channels[ 2 ].avg_sample.q.integer;
+
+                   if ( e2prom_ex_write(pt_sensors[0].offset, (uint8_t *) &offsets[0]) ) {
+                       goto ERROR;
+                   }
+                   if ( e2prom_ex_write(pt_sensors[1].offset, (uint8_t *) &offsets[1]) ) {
+                       goto ERROR;
+                   }
+                   if ( e2prom_ex_write(pt_sensors[2].offset, (uint8_t *) &offsets[2]) ) {
+                       goto ERROR;
+                   }
+
+
+			   e2prom_ex_read ( pt_sensors[ 0 ].offset, (uint8_t *) &offsets[0] );
+			   e2prom_ex_read ( pt_sensors[ 1 ].offset, (uint8_t *) &offsets[1] );
+			   e2prom_ex_read ( pt_sensors[ 2 ].offset, (uint8_t *) &offsets[2] );
+
+			   printf( "T0: %d\t%d\r\nT1: %d\t%d\r\nT2: %d\t%d\r\n",
+                       adc_channels[ 0 ].avg_sample.q.integer, offsets[ 0 ],
+                       adc_channels[ 1 ].avg_sample.q.integer, offsets[ 1 ],
+                       adc_channels[ 2 ].avg_sample.q.integer, offsets[ 2 ]
+                   );
+               }
+               else {
+                   goto ERROR;
+               }
+           }
+           else {
+               goto ERROR;
+           }
+           break;
+
+       case 'H':
+
+           humidity = (int16_t) (calc_humidity( HUMIDIY_CAL_CHANNEL ) * 10.);
+           if ( argc == 3 ) {
+               correction = str2int( argv[ 2 ] );
+               correction -= humidity;
+
+               if ( !e2prom_ex_write ( adc_sensors[ 0 ].correction, (uint8_t *) &correction ) ) {
+                   goto ERROR;
+               }
+           }
+
+           e2prom_ex_read ( adc_sensors[ 0 ].correction, (uint8_t *) &correction );
+           printf( "RH: %d %%\t%d\r\n", humidity, correction );
+           break;
+
+       case 'C':
+
+
+           sid = argv[ 1 ][ 1 ];
+           if ( ( argc == 3 ) && ( sid != '\0' ) && ( argv[ 1 ][ 2 ] == '\0' ) ) {
+		   static uint8_t channel_number;
+		   static int16_t offset;
+		   static uint16_t coefficient;
+	       static uint16_t resistance = 0;
+		   static double coefficient_d = 0;
+		   static float RT;
+		   static float T;
+
+		   if ( isdigit( sid ) && ( (channel_number = sid - '0') < 3 ) ) {
+
+			   e2prom_ex_read ( pt_sensors[ channel_number ].coefficient, (uint8_t *) &coefficient );
+			   e2prom_ex_read ( pt_sensors[ channel_number ].offset, (uint8_t *) &offset );
+			   int16_t Z = adc_channels[ channel_number ].avg_sample.q.integer - offset;
+
+
+			   if ( 0 == strcmp( "DEL", strupr( argv[ 2 ] ) ) ) {
+				   coefficient = 0;
+				   float pga = 0;
+				   if ( !e2prom_ex_write ( pt_sensors[ channel_number ].pga, (uint8_t *) &pga ) ) {
+					   goto ERROR;
+				   }
+			   } else {
+				   float pga = 0;
+
+				   resistance = str2int( argv[ 2 ] );
+				   pga = calculate_pga( resistance, Z );
+
+				   if ( !e2prom_ex_write ( pt_sensors[ channel_number ].pga, (uint8_t *) &pga ) ) {
+					   goto ERROR;
+				   }
+			   }
+
+		   }
+
+		   float pga = 0;
+		   char pga_strbuf[ 10 ];
+		   e2prom_ex_read ( pt_sensors[ channel_number ].pga, (uint8_t *) &pga );
+		   gcvt( FROUND(pga), 5, pga_strbuf );
+		   printf( "C%hu: \t% 10s\r\n",
+		   channel_number,
+		   pga_strbuf
+		   );
+	   }
+
+       break;
+       default:
+           goto ERROR;
+       }
+
+   }
+   else {
+       goto ERROR;
+   }
+
+   return CR_DONE;
+
+ERROR:
+
+	printf("%s", CLI_MSG_SESSION_ERROR);
+
+
+   return CR_DONE;
+
+
+
+
+
+}
 
 uint8_t command_close( uint8_t argc, char *argv[] )
 {
