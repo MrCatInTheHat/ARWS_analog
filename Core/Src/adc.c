@@ -266,7 +266,8 @@ void temp_meas ( void ) {
 		else adc_channels[ 2 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
 	}// else HAL_Delay(ads1115.ads_delay);
 
-
+//	adc_channels[ 2 ].raw_sample.value  = 0;
+//	adc_channels[ 2 ].raw_sample.q.integer = -17000;
 
 	for ( char i = 0; i < 3; ++i ) {
 		if ( adc_channels[ i ].raw_sample.q.integer == 32767 ) continue;

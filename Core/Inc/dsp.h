@@ -40,10 +40,11 @@ typedef union {
 // Using an m+n bit signed integer container with n fractional bits:
 //   its range is [-2^{m-1}, 2^{m-1} - 2^{-n}]
 //   its resolution is 2^{-n}
-typedef union {
+typedef union  {
     int32_t value;
     int8_t  bytes[ 4 ];
-    struct {
+    struct  __attribute__((packed)) {
+//    	int8_t base;
         int8_t  fraction; // fractional bits
         int16_t integer;  // integer bits (15 integer bits + 1 sign bit)
     } q;
