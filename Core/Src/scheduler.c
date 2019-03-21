@@ -23,6 +23,7 @@
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern I2C_HandleTypeDef hi2c1;
+extern UART_HandleTypeDef huart1;
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern console_t console;
@@ -220,6 +221,8 @@ void task_console ( struct task_t * task )
         if ( !event_flag ) event_flag = 1;
     }
 
+    huart1.gState = HAL_UART_STATE_READY;
+
 
 }
 
@@ -255,6 +258,7 @@ void scheduler_run( scheduler_t *scheduler_p ){
 
 	if ( scheduler_p->event & timer_5_seconds ) scheduler_p->state = test_state;
 	else if ( scheduler_p->event & console_read_event ) scheduler_p->state = active_state;
+
 
     while ( scheduler_p->event ) {
 

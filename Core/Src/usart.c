@@ -49,9 +49,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
-
+#include "scheduler.h"
 /* USER CODE BEGIN 0 */
-
+extern scheduler_t scheduler;
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -72,6 +72,15 @@ void MX_USART1_UART_Init(void)
   if (HAL_UART_Init(&huart1) != HAL_OK)
   {
     Error_Handler();
+  }
+
+  /* USART1 interrupt Init */
+  if ( scheduler.vdd == vdd_type_ext ) {
+	  HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
+	  HAL_NVIC_EnableIRQ(USART1_IRQn);
+
+	  huart1.gState = HAL_UART_STATE_READY;
+	  huart1.Instance->CR1 |= USART_SR_RXNE;
   }
 
 }

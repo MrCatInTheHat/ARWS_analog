@@ -34,9 +34,21 @@
 #include "stdout_user.h"
 #include "stm32f1xx_hal.h"
 #include "usb_device.h"
+#include "scheduler.h"
 
 extern UART_HandleTypeDef huart1;
 extern USBD_HandleTypeDef hUsbDeviceFS;
+extern scheduler_t scheduler;
+
+#define RS_485_SEND() 	{ \
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET); \
+					HAL_Delay(1);  \
+					}
+
+#define RS_485_RECEIVE()  { \
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET); \
+					}
+
 
 int _write(int fd, char *str, int len);
 /**
@@ -47,9 +59,14 @@ int _write(int fd, char *str, int len);
 */
 int _write(int fd, char *str, int len){
 
-	USBD_CDC_SetTxBuffer(&hUsbDeviceFS,str,len);
-    USBD_CDC_TransmitPacket(&hUsbDeviceFS);
-	//HAL_UART_Transmit(&huart1, str, len, 5 );
+	if ( scheduler.vdd == vdd_type_usb ) {
+		USBD_CDC_SetTxBuffer(&hUsbDeviceFS,str,len);
+    	USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+	} else {
+		RS_485_SEND()
+		HAL_UART_Transmit(&huart1, str, len, 50 );
+		RS_485_RECEIVE()
+	}
 
   return len;
 

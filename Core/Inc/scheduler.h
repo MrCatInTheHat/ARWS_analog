@@ -31,6 +31,11 @@ typedef enum {
 	timer_5_seconds			 = 0x100,
 } state_events_e;
 
+typedef enum {
+    vdd_type_no           	 = 0x00,
+	vdd_type_ext             = 0x01,
+	vdd_type_usb             = 0x02,
+} vdd_type_e;
 
 typedef enum {
     console_task             = 1,
@@ -74,6 +79,7 @@ typedef struct {
     struct task_t task[TASK_NUMBER];
     uint32_t event;
     state_type_e state;
+    vdd_type_e	vdd;
 } scheduler_t;
 
 typedef uint32_t event_t;

@@ -87,6 +87,8 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 event_t event;
+
+scheduler_t scheduler;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,7 +110,7 @@ void SystemClock_Config(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	static scheduler_t scheduler;
+  scheduler.vdd = vdd_type_ext;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -129,13 +131,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_I2C1_Init();
   MX_CRC_Init();
   MX_USB_DEVICE_Init();
 //  MX_IWDG_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_USART1_UART_Init();
+
   /* USER CODE BEGIN 2 */
   scheduler.state = active_state;
   scheduler_init(&scheduler);
@@ -143,12 +144,27 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_Delay(5000);
+  HAL_Delay(4000);
+
+  // if ( scheduler.vdd & vdd_type_usb ) {
+  if ( hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED ) {
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET); // if RESET -> USB De-attach
+	  HAL_Delay(10);
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET); // if SET -> 5V to 12 DC-DC WORKS
+	  scheduler.vdd = vdd_type_usb;
+  }
+
+  HAL_Delay(1500);
+  MX_USART1_UART_Init();
+  MX_I2C1_Init();
   event_post(&event, time_to_start_counter);
   event_post( &event, time_to_poll_adc_ch1 );
+  check_eeprom_ex();
  // i2c_bus_eeprom_write(0xA0,0x00,(uint8_t*)&eeprom_ex,sizeof(eeprom_ex));
  // HAL_Delay(1000);
 //  i2c_bus_eeprom_read(0xA0,0x00,(uint8_t*)&eeprom_ex_test,sizeof(eeprom_ex_test));
+
+
 
   while (1)
   {
@@ -180,7 +196,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL3; // 6 for test, 3 for real
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();

@@ -38,6 +38,7 @@
 #include "stm32f1xx_it.h"
 #include "scheduler.h"
 #include "meteo.h"
+#include "console.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -46,6 +47,7 @@
 /* USER CODE BEGIN TD */
 extern event_t event;
 extern meteo_t meteo;
+extern console_t console;
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -301,5 +303,62 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
             the __HAL_TIM_IC_CaptureCallback could be implemented in the user file
    */
 }
+
+
+/**
+* @brief This function handles USART3 global interrupt.
+*/
+
+
+enum {
+    USART_SR_MASK = (USART_SR_PE
+                    | USART_SR_FE
+                    | USART_SR_NE
+                    | USART_SR_ORE
+                    | USART_SR_IDLE
+                    | USART_SR_RXNE
+                    | USART_SR_TC
+                    | USART_SR_TXE
+                    | USART_SR_LBD
+                    | USART_SR_CTS),
+    USART_SR_ERROR_FLAGS = (USART_SR_PE
+                    | USART_SR_FE
+                    | USART_SR_NE
+                    | USART_SR_ORE),
+    //USART_SR_ERROR_FLAGS = USART_ERROR_MASK,
+};
+
+
+void USART1_IRQHandler(void)
+{
+
+	static uint8_t symbol = 0;
+
+    if ( USART1->SR & USART_SR_RXNE )
+    	USART1->SR &= ~USART_SR_MASK;
+
+	symbol = USART1->DR;
+
+	switch ( symbol ) {
+	// if <ENTER> was pressed
+	case '\r':
+	case '\n':
+		event_post(&event, console_read_event);
+		console.input.buffer[console.input.head] = '\0';
+		console.input.count = ( console.input.count + 1 ) % console.input.size;
+		console.input.head = ( console.input.head + 1 ) % console.input.size;
+	//wrap this
+		break;
+	default:
+		console.input.buffer[console.input.head] = symbol;
+		console.input.count = ( console.input.count + 1 ) % console.input.size;
+		console.input.head = ( console.input.head + 1 ) % console.input.size;
+	//wrap this
+		break;
+	}
+
+
+}
+
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
