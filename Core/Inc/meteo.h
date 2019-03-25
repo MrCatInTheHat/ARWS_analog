@@ -15,7 +15,7 @@
 #define MAX_ADC_SENSORS     3
 
 enum { WS_INTEGRATION_TIME = 30 };
-
+enum { WD_INTEGRATION_TIME = 30 };
 
 typedef struct {
     uint8_t  index;
@@ -26,6 +26,30 @@ typedef struct {
     uint32_t total_sum_15;
     uint16_t samples[ WS_INTEGRATION_TIME ];
 } wgauge_t;
+
+
+typedef enum {
+    AMA_INIT = 0,
+    AMA_RUN
+} TAMA_ST;
+
+typedef struct {
+    TAMA_ST state;
+    int16_t angle;
+    int16_t total_sum; // max. 90 samples
+    uint8_t sample_number;
+} TAMA, *PAMA; // Arithmetic Mean Angle
+
+typedef struct {
+    uint8_t index;
+    uint8_t index_15;
+    //sint16_t total_sum;
+    int16_t total_sum_15;
+    uint8_t sample_number_15;
+    TAMA minute_mean;
+    TAMA half_hourly_mean;
+    int16_t samples[ WD_INTEGRATION_TIME ];
+} wvane_t;
 
 typedef struct {
    int16_t temperature;

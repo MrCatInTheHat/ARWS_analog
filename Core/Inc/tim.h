@@ -55,7 +55,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "stdio.h"
+#include "meteo.h"
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -71,7 +72,12 @@ void MX_TIM2_Init(void);
 void MX_TIM3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+uint16_t round_div_u16( uint16_t x, uint16_t y );
+int16_t round_div_i16( int16_t x, int16_t y );
+void wvane_average_data( void );
+void unwrap_angle( int16_t *angle );
+void wvane_accumulate_data( uint16_t new_value );
+uint16_t compute_mean_angle( PAMA ama, uint16_t new_angle );
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -51,14 +51,15 @@
 #include "tim.h"
 
 /* USER CODE BEGIN 0 */
-
+extern volatile wvane_t wind_vane;
+extern volatile meteo_t meteo;
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
 /* TIM2 init function */
-void MX_TIM2_Init(void)
+void MX_TIM2_Init(void)   // 60 seconds timer
 {
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
@@ -104,16 +105,16 @@ void MX_TIM2_Init(void)
 
 }
 /* TIM3 init function */
-void MX_TIM3_Init(void)
+void MX_TIM3_Init(void)   // 1 seconds timer
 {
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_IC_InitTypeDef sConfigIC = {0};
 
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 35999;
+  htim3.Init.Prescaler = 999;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 3333;
+  htim3.Init.Period = 24000;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -252,6 +253,123 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 } 
 
 /* USER CODE BEGIN 1 */
+
+uint16_t round_div_u16( uint16_t x, uint16_t y )
+{
+    return ( ( x + (y >> 1) ) / y );
+}
+
+
+int16_t round_div_i16( int16_t x, int16_t y ) // div_i16, div_u16, round_div_i16, round_i16_div,
+{
+    uint8_t sign = 0;
+
+    if ( x < 0 ) {
+        ++sign;
+        x = -x;
+    }
+
+    if ( y < 0 ) {
+        ++sign;
+        y = -y;
+    }
+
+    int16_t result = (int16_t) round_div_u16( x, y );
+
+    if ( sign & 1 ) {
+        result = -result;
+    }
+
+    return result;
+}
+
+
+uint16_t compute_mean_angle( PAMA ama, uint16_t new_angle ) // accumulate, cumulate, cumulative
+{
+    int16_t angle = ama->angle;
+    if ( ama->state == AMA_RUN ) {
+        int16_t angular_difference = new_angle - angle;
+        if ( angular_difference < -180 ) {
+            angular_difference += 360;
+        }
+        else if ( angular_difference > 180 ) {
+            angular_difference -= 360;
+        }
+        angle += angular_difference;
+    }
+    else {
+        angle = new_angle;
+        ama->total_sum = 0;
+        ama->sample_number = 0;
+        ama->state = AMA_RUN;
+    }
+
+    ++ama->sample_number;
+    ama->total_sum += angle;
+    ama->angle = angle;
+    return angle;
+}
+
+#define LENGTH(x)           ( sizeof( (x) ) / sizeof( (x)[ 0 ] ) )
+
+void wvane_accumulate_data( uint16_t new_value )
+{
+    // 1.
+    wind_vane.half_hourly_mean.total_sum -= wind_vane.samples[ wind_vane.index ];
+    wind_vane.total_sum_15 -= wind_vane.samples[ wind_vane.index_15 ];
+
+    // 2.
+    wind_vane.samples[ wind_vane.index ] = compute_mean_angle( (PAMA) &wind_vane.half_hourly_mean, new_value );
+    wind_vane.total_sum_15 += wind_vane.half_hourly_mean.angle;
+
+    // 3.
+    ++wind_vane.index;
+    if ( wind_vane.index >= LENGTH( wind_vane.samples ) ) {
+        wind_vane.index = 0;
+    }
+
+    wind_vane.index_15 = wind_vane.index - 15;
+    if ( (int8_t) wind_vane.index_15 < 0 ) {
+        wind_vane.index_15 += LENGTH( wind_vane.samples );
+    }
+
+    if ( wind_vane.sample_number_15 < 15 ) {
+        ++wind_vane.sample_number_15;
+    }
+
+    if ( wind_vane.half_hourly_mean.sample_number >= LENGTH( wind_vane.samples ) ) {
+        wind_vane.half_hourly_mean.sample_number = LENGTH( wind_vane.samples );
+    }
+}
+
+
+void unwrap_angle( int16_t *angle )
+{
+    if ( *angle < 0 ) {
+        *angle += 360;
+    }
+    else if ( *angle >= 360 ) {
+        *angle -= 360;
+    }
+}
+
+
+void wvane_average_data( void )
+{
+    uint8_t index = wind_vane.index - 1;
+    if ( (int8_t) index < 0 ) {
+        index += LENGTH( wind_vane.samples );
+    }
+    meteo.wind.wind_dir = wind_vane.samples[ index ];
+    unwrap_angle( (int16_t *) &meteo.wind.wind_dir );
+
+    meteo.wind.wind_dir_15_min = round_div_i16( wind_vane.total_sum_15, wind_vane.sample_number_15 );
+    unwrap_angle( (int16_t *) &meteo.wind.wind_dir_15_min );
+
+    meteo.wind.wind_dir_30_min = round_div_i16( wind_vane.half_hourly_mean.total_sum, wind_vane.half_hourly_mean.sample_number );
+    unwrap_angle( (int16_t *) &meteo.wind.wind_dir_30_min );
+}
+
 
 /* USER CODE END 1 */
 

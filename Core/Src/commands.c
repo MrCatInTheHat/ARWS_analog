@@ -95,10 +95,14 @@ uint8_t command_wind( uint8_t argc, char *argv[] )
 
 	//flash read
 //		RS_485_SEND()
-		printf("WIND\t%d\t%d\t%d\t%d\r\n", calc_wspeed( meteo.wind.wind_speed ),
+		printf("WIND\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n", calc_wspeed( meteo.wind.wind_speed ),
 		calc_wspeed( meteo.wind.wind_speed_15_min ),
 		calc_wspeed( meteo.wind.wind_speed_30_min ),
-		calc_wspeed( meteo.wind.wind_gust_30_min ));
+		calc_wspeed( meteo.wind.wind_gust_30_min ),
+		meteo.wind.wind_dir,
+		meteo.wind.wind_dir_15_min,
+		meteo.wind.wind_dir_30_min);
+
 //		RS_485_RECEIVE()
 
 

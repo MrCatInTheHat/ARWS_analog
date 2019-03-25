@@ -41,6 +41,8 @@
 #include "console.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stdint.h"
+#include "dsp.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,6 +50,8 @@
 extern event_t event;
 extern meteo_t meteo;
 extern console_t console;
+extern volatile sample_t adc_channels[ 9 ];
+extern volatile wvane_t wind_vane;
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -265,17 +269,29 @@ void TIM3_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 
+#define 	TEST_TIME_WAIT			5
 
+
+	static uint8_t timer_tick = TEST_TIME_WAIT;
 
 	if ( htim->Instance == TIM2) {
 		event_post(&event, counter_ready);
 	}
 
 	if ( htim->Instance == TIM3) {
-		event_post(&event, console_test_command);
-		HAL_TIM_Base_Stop_IT(&htim3);
+		timer_tick--;
+		if ( timer_tick == 0 ) {
+			event_post(&event, console_test_command);
+			HAL_TIM_Base_Stop_IT(&htim3);
+			timer_tick = TEST_TIME_WAIT;
+		}
+
+		uint16_t wind_direction;
+		wind_direction = round_div_u16( (uint32_t)adc_channels[ 4 ].raw_sample.q.integer * 360, 26666 );
+		compute_mean_angle( (PAMA) &wind_vane.minute_mean, wind_direction );
 
 	}
 

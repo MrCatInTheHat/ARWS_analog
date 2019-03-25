@@ -31,8 +31,7 @@ extern event_t event;
 
 volatile meteo_t meteo = { 0 };
 volatile wgauge_t wind_gauge;
-
-#define LENGTH(x)           ( sizeof( (x) ) / sizeof( (x)[ 0 ] ) )
+volatile wvane_t wind_vane;
 
 
 inline static uint32_t round_div_u32( uint32_t x, uint32_t y )
@@ -40,11 +39,6 @@ inline static uint32_t round_div_u32( uint32_t x, uint32_t y )
     return ( ( x + (y >> 1) ) / y );
 }
 
-
-inline static uint16_t round_div_u16( uint16_t x, uint16_t y )
-{
-    return ( ( x + (y >> 1) ) / y );
-}
 
 
 void task_adc ( struct task_t * task )
@@ -159,6 +153,15 @@ void task_counter ( struct task_t * task )
 
         	  event_post(&event, time_to_start_counter);
         	  meteo.wind.counter = 0;
+
+
+        	  int16_t wind_direction = round_div_i16( wind_vane.minute_mean.total_sum, wind_vane.minute_mean.sample_number );
+			  unwrap_angle( &wind_direction );
+			  wind_vane.minute_mean.state = AMA_INIT;
+			  wvane_accumulate_data( wind_direction );
+			  wvane_average_data();
+
+
 			  break;
 
           default:

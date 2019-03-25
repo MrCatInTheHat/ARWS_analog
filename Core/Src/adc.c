@@ -355,12 +355,11 @@ void temp_meas ( void ) {
 			adc_channels[ 0 ].raw_sample.q.integer = 32767;
 		else adc_channels[ 0 ].raw_sample.q.integer = swap_data(adc_reg.conv.data);
 	} else {
-//		HAL_I2C_DeInit(&hi2c1);
-////		HAL_I2C_MspDeInit(&hi2c1);
-//		HAL_Delay(10);
-//		MX_I2C1_Init();//else HAL_Delay(ads1115.ads_delay);
-//		__HAL_RCC_I2C1_CLK_ENABLE();
-		HAL_I2C_ClearBusyFlagErrata_2_14_7(&hi2c1);
+		HAL_I2C_DeInit(&hi2c1);
+		HAL_Delay(10);
+		MX_I2C1_Init();//else HAL_Delay(ads1115.ads_delay);
+		__HAL_RCC_I2C1_CLK_ENABLE();
+//		HAL_I2C_ClearBusyFlagErrata_2_14_7(&hi2c1);
 	}
 
 	//1 - 3
