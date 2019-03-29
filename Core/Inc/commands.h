@@ -57,10 +57,17 @@ extern "C" {
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET); \
 					}	
 /***************** Defines Block End **************************/
+/*
+typedef struct {
+    uint32_t image_size;
+    uint32_t image_crc;
+    uint32_t signature;
+    uint32_t address;
+    uint32_t reserved[ 124 ];
+    uint32_t image[];
+} firmware_metadata_t;
 
-
-
-
+*/
 /***************** Structures Define Block Begin **************/
 
 /***************** Structures Define Block End  ***************/
@@ -76,6 +83,8 @@ uint8_t command_wind( uint8_t argc, char *argv[] );
 uint8_t command_test( uint8_t argc, char *argv[] );
 uint8_t command_air( uint8_t argc, char *argv[] );
 uint8_t command_calibrate( uint8_t argc, char *argv[] );
+uint8_t command_reply_data( uint8_t argc, char *argv[] );
+uint8_t command_air( uint8_t argc, char *argv[] );
 /***************** Function Initialization Block End **********/	
 
 		

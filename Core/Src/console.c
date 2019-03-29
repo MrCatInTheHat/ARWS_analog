@@ -76,6 +76,12 @@ const console_command_t g_command_list[] = {
 		CT_ONLINE
 	},
 	{
+		(const char *) "AIR",
+		command_air,
+		"AIR", // GET AIR DATA
+		CT_ONLINE
+	},
+	{
 		(const char *) "TEST",
 		command_test,
 		"TEST", // GET TEST DATA
@@ -86,6 +92,12 @@ const console_command_t g_command_list[] = {
 		command_calibrate,
 		"CALIBRATE", // CALIBRATE SENSORS
 		CT_ONLINE
+	},
+	{
+		(const char *) "@ANALOG",
+		command_reply_data,
+		"RETURN DATA", // message conatains all analog data
+		CT_ONLINE | CT_OFFLINE
 	},
 	{
         (const char *) "CLOSE",

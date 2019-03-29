@@ -11,15 +11,15 @@
 #ifndef INC_ADC_H_
 #define INC_ADC_H_
 
-#define MAX_CODE       			32767                           // max code ADS1115
+#define MAX_CODE_VAL  			32767                           // max code ADS1115
 #define V_REF           		6.144                           // Reference Voltage; Vout = code*Vref/maxcode
 #define V_HUM_LOW       		0.8                             // humidity's sensor low voltage
 #define V_SUP           		5.0                             // Supply Voltage
-#define COEF_ADD        		V_SUP*MAX_CODE*0.16/V_REF       // Divider coefficient
-#define COEF_DIV        		V_SUP*MAX_CODE*0.0062           // Divider coefficient
+#define COEF_ADD        		V_SUP*MAX_CODE_VAL*0.16/V_REF       // Divider coefficient
+#define COEF_DIV        		V_SUP*MAX_CODE_VAL*0.0062           // Divider coefficient
 #define TRUE_COEF1     		 	COEF_DIV*1.0546                 // True_RH divider 1 coefficient
 #define TRUE_COEF2     		 	COEF_DIV*0.000216               // True_RH divider 2 coefficient; !! temperature is x10 already
-#define HUM_LOW_LVL    		 	800 * MAX_CODE / ( V_REF * 1000)// V_HUM_LOW * MAX_CODE / V_REF
+#define HUM_LOW_LVL    		 	800 * MAX_CODE_VAL / ( V_REF * 1000)// V_HUM_LOW * MAX_CODE / V_REF
 
 #define MUX_1 					0b100
 #define MUX_2 					0b101

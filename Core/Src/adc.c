@@ -315,6 +315,10 @@ float calc_temperature( uint8_t channel )
     //return (T < 0.0 ? T - 0.5 : T + 0.5);
 }
 
+
+float air_humidity;
+
+
 void temp_meas ( void ) {
 
 	float air_temperature;
@@ -464,7 +468,7 @@ void temp_meas ( void ) {
 
 	if ( meteo.air.temperature != -9999 ) {
 		// Rh (HIH-4010)
-		float air_humidity;
+//		float air_humidity;
 		if ( adc_channels[ 3 ].avg_sample.q.integer < HUM_LOW_LVL ) { // U < 0.8V
 			air_humidity = 0.0;
 		}

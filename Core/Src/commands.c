@@ -64,19 +64,21 @@ extern wgauge_t wind_gauge;
 uint8_t command_open( uint8_t argc, char *argv[] )
 {
 
-    // operate only in off-line mode
-    if ( CLI_CLOSED == console.state ) {
-        console.state = CLI_OPENED;
-        console.session_timeout = CONSOLE_ONLINE_SESSION_TIMEOUT;
-        console.inactivity_timer = 0;
-        console.inactivity_timeout = 0;        
-	//flash read
-//		RS_485_SEND()
-		printf("%s", CLI_MSG_SESSION_OPENED);
-//		RS_485_RECEIVE()
+	if  ( argc == 3  ) {
+		strupr( argv[ 1 ] );
+		if ( ( str2int( argv[ 2 ] ) == 1 ) && (  0 == strcmp( "ANALOG", argv[ 1 ] ) ) ) {
 
-    }
-    
+			if ( CLI_CLOSED == console.state ) {
+				console.state = CLI_OPENED;
+				console.session_timeout = CONSOLE_ONLINE_SESSION_TIMEOUT;
+				console.inactivity_timer = 0;
+				console.inactivity_timeout = 0;
+
+				printf("%s", CLI_MSG_SESSION_OPENED);
+			}
+		}
+	}
+
     return CR_DONE;
 }
 static inline uint16_t calc_wspeed( uint16_t freq )
@@ -91,11 +93,8 @@ static inline uint16_t calc_wspeed( uint16_t freq )
 uint8_t command_wind( uint8_t argc, char *argv[] )
 {
 
-    // operate only in off-line mode
 
-	//flash read
-//		RS_485_SEND()
-		printf("WIND\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n", calc_wspeed( meteo.wind.wind_speed ),
+	printf("WIND\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n", calc_wspeed( meteo.wind.wind_speed ),
 		calc_wspeed( meteo.wind.wind_speed_15_min ),
 		calc_wspeed( meteo.wind.wind_speed_30_min ),
 		calc_wspeed( meteo.wind.wind_gust_30_min ),
@@ -103,11 +102,28 @@ uint8_t command_wind( uint8_t argc, char *argv[] )
 		meteo.wind.wind_dir_15_min,
 		meteo.wind.wind_dir_30_min);
 
-//		RS_485_RECEIVE()
+
 
 
     return CR_DONE;
 }
+
+
+uint8_t command_air( uint8_t argc, char *argv[] )
+{
+
+
+	printf("AIR\t%d\t%d\t%d\t%d\t%d\r\n",
+			meteo.air.temperature,
+			meteo.air.humidity,
+			meteo.air.dew_point,
+			meteo.surf[0].surface_temperature,
+			meteo.surf[0].ground_temperature);
+
+
+    return CR_DONE;
+}
+
 
 uint8_t command_test( uint8_t argc, char *argv[] )
 {
@@ -200,7 +216,7 @@ uint8_t command_test( uint8_t argc, char *argv[] )
 
 static inline float calc_humidity( uint8_t channel )
 {
-    #define MAX_CODE        32767                           // max code ADS1115
+   /* #define MAX_CODE        32767                           // max code ADS1115
     #define V_REF           6.144                           // Reference Voltage; Vout = code*Vref/maxcode
     #define V_HUM_LOW       0.8                             // humidity's sensor low voltage
     #define V_SUP           5.0                             // Supply Voltage
@@ -209,7 +225,7 @@ static inline float calc_humidity( uint8_t channel )
     #define TRUE_COEF1      COEF_DIV*1.0546                 // True_RH divider 1 coefficient
     #define TRUE_COEF2      COEF_DIV*0.000216               // True_RH divider 2 coefficient; !! temperature is x10 already
     #define HUM_LOW_LVL     800 * MAX_CODE / ( V_REF * 1000)// V_HUM_LOW * MAX_CODE / V_REF
-
+*/
     float air_humidity;
 
     if ( adc_channels[ 3 ].avg_sample.q.integer < HUM_LOW_LVL ) { // U < 0.8V
@@ -408,6 +424,42 @@ uint8_t command_close( uint8_t argc, char *argv[] )
 
 
 
+uint8_t command_reply_data( uint8_t argc, char *argv[] )
+{
+	uint32_t address = 0;
+
+
+	if ( argc == 3 ) {
+		strupr( argv[ 2 ] );
+		address = str2int( argv[ 1 ] );
+		if (  0 == strcmp( "MES", argv[ 2 ] ) ) {
+			if ( address == 1 ){
+				printf("AIR: %d %d %d %d %d WIND: %d %d %d %d %d %d %d", meteo.air.temperature,
+						meteo.air.humidity,
+						meteo.air.dew_point,
+						meteo.surf[0].surface_temperature,
+						meteo.surf[0].ground_temperature,
+						calc_wspeed( meteo.wind.wind_speed ),
+						calc_wspeed( meteo.wind.wind_speed_15_min ),
+						calc_wspeed( meteo.wind.wind_speed_30_min ),
+						calc_wspeed( meteo.wind.wind_gust_30_min ),
+						meteo.wind.wind_dir,
+						meteo.wind.wind_dir_15_min,
+						meteo.wind.wind_dir_30_min);
+				printf("\r\n");
+			} else {
+				//printf("Wrong address \r\n");
+			}
+		}
+	}
+	else {
+		//printf("%s", CLI_MSG_UNKNOWN_COMMAND);
+	}
+
+
+	return CR_DONE;
+
+}
 
 /***************** Fucntion Declaration Block End  *************/
 

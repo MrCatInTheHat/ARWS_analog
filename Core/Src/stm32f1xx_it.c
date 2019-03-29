@@ -52,6 +52,7 @@ extern meteo_t meteo;
 extern console_t console;
 extern volatile sample_t adc_channels[ 9 ];
 extern volatile wvane_t wind_vane;
+extern volatile scheduler_t scheduler;
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -282,11 +283,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	}
 
 	if ( htim->Instance == TIM3) {
-		timer_tick--;
-		if ( timer_tick == 0 ) {
-			event_post(&event, console_test_command);
-			HAL_TIM_Base_Stop_IT(&htim3);
-			timer_tick = TEST_TIME_WAIT;
+		if ( scheduler.state == test_state ) {
+			timer_tick--;
+			if ( timer_tick == 0 ) {
+				event_post(&event, console_test_command);
+				//HAL_TIM_Base_Stop_IT(&htim3);
+				timer_tick = TEST_TIME_WAIT;
+			}
 		}
 
 		uint16_t wind_direction;
@@ -357,8 +360,11 @@ void USART1_IRQHandler(void)
 
 	switch ( symbol ) {
 	// if <ENTER> was pressed
-	case '\r':
 	case '\n':
+
+		break;
+
+	case '\r':
 		event_post(&event, console_read_event);
 		console.input.buffer[console.input.head] = '\0';
 		console.input.count = ( console.input.count + 1 ) % console.input.size;

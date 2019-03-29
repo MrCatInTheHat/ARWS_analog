@@ -87,8 +87,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 event_t event;
-
-scheduler_t scheduler;
+volatile scheduler_t scheduler;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/

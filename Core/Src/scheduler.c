@@ -96,7 +96,7 @@ void task_counter ( struct task_t * task )
         	  HAL_TIM_Base_Start_IT(&htim2);
         	  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
 //        	  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
-//        	  HAL_TIM_Base_Start_IT(&htim3);
+        	  HAL_TIM_Base_Start_IT(&htim3);
 //        	  HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_1);
 //        	  HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
 
@@ -105,8 +105,8 @@ void task_counter ( struct task_t * task )
 
           case timer_5_seconds:
 
-        	  if ( task->state == test_state )
-        	  HAL_TIM_Base_Start_IT(&htim3);
+        	//  if ( task->state == test_state )
+        	 // HAL_TIM_Base_Start_IT(&htim3);
 
               break;
 
