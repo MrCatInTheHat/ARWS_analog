@@ -10,6 +10,7 @@
 #include "usb_device.h"
 #include "console.h"
 #include "meteo.h"
+#include "iwdg.h"
 /*********************************************************************
  * @fn      Scheduler init function
  *
@@ -24,6 +25,7 @@ extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
+extern IWDG_HandleTypeDef hiwdg;
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern console_t console;
@@ -258,6 +260,8 @@ void scheduler_init( scheduler_t *scheduler_p ){
 
 void scheduler_run( scheduler_t *scheduler_p ){
 	uint32_t i = 0;
+
+//	HAL_IWDG_Refresh(&hiwdg);
 
 	if ( scheduler_p->event & timer_5_seconds ) scheduler_p->state = test_state;
 	else if ( scheduler_p->event & console_read_event ) scheduler_p->state = active_state;

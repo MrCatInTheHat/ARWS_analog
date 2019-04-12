@@ -132,19 +132,20 @@ int main(void)
   MX_GPIO_Init();
   MX_CRC_Init();
   MX_USB_DEVICE_Init();
-//  MX_IWDG_Init();
+  //MX_IWDG_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
 
   /* USER CODE BEGIN 2 */
+//  HAL_IWDG_Refresh(&hiwdg);
   scheduler.state = active_state;
   scheduler_init(&scheduler);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_Delay(4000);
-
+  HAL_Delay(3000);
+//  HAL_IWDG_Refresh(&hiwdg);
   // if ( scheduler.vdd & vdd_type_usb ) {
   if ( hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED ) {
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET); // if RESET -> USB De-attach
@@ -159,6 +160,8 @@ int main(void)
   event_post(&event, time_to_start_counter);
   event_post( &event, time_to_poll_adc_ch1 );
   check_eeprom_ex();
+
+//  HAL_IWDG_Refresh(&hiwdg);
  // i2c_bus_eeprom_write(0xA0,0x00,(uint8_t*)&eeprom_ex,sizeof(eeprom_ex));
  // HAL_Delay(1000);
 //  i2c_bus_eeprom_read(0xA0,0x00,(uint8_t*)&eeprom_ex_test,sizeof(eeprom_ex_test));
@@ -168,6 +171,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
 	  scheduler.event = event_pend(&event);
 	  scheduler_run(&scheduler);
 //	  HAL_Delay(5);
