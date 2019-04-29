@@ -133,6 +133,20 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET); // if SET -> 5V to 12 DC-DC WORKS
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET); // if RESET -> USB De-attach
 
+  /*Configure GPIO pins : PB12 PB8 */
+    GPIO_InitStruct.Pin = GPIO_PIN_12;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET); // de-select usb
+    HAL_Delay(10);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_SET);
+
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_12);
+
+
 }
 
 /* USER CODE BEGIN 2 */

@@ -97,18 +97,12 @@ void task_counter ( struct task_t * task )
 
         	  HAL_TIM_Base_Start_IT(&htim2);
         	  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
-//        	  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
         	  HAL_TIM_Base_Start_IT(&htim3);
-//        	  HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_1);
-//        	  HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
 
               break;
 
 
           case timer_5_seconds:
-
-        	//  if ( task->state == test_state )
-        	 // HAL_TIM_Base_Start_IT(&htim3);
 
               break;
 
@@ -261,7 +255,7 @@ void scheduler_init( scheduler_t *scheduler_p ){
 void scheduler_run( scheduler_t *scheduler_p ){
 	uint32_t i = 0;
 
-//	HAL_IWDG_Refresh(&hiwdg);
+	HAL_IWDG_Refresh(&hiwdg);
 
 	if ( scheduler_p->event & timer_5_seconds ) scheduler_p->state = test_state;
 	else if ( scheduler_p->event & console_read_event ) scheduler_p->state = active_state;

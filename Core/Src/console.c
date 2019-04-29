@@ -100,6 +100,18 @@ const console_command_t g_command_list[] = {
 		CT_ONLINE | CT_OFFLINE
 	},
 	{
+		(const char *) "REBOOT",
+		command_bootloader,
+		"REBOOT BOOTLOADER", // REBOOT TO BOOTLOADER COMMAND
+		CT_ONLINE | CT_UNICAST
+	},
+	{
+		(const char *) "ADDRESS",
+		command_address,
+		"CHANGE ADDRESS", // change address of the module
+		CT_ONLINE | CT_UNICAST
+	},
+	{
         (const char *) "CLOSE",
         command_close,
         "CLOSE CONSOLE", // AUTOMATIC COMMUNICATION/OFFLINE MODE

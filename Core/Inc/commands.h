@@ -84,7 +84,11 @@ uint8_t command_test( uint8_t argc, char *argv[] );
 uint8_t command_air( uint8_t argc, char *argv[] );
 uint8_t command_calibrate( uint8_t argc, char *argv[] );
 uint8_t command_reply_data( uint8_t argc, char *argv[] );
+uint8_t command_bootloader( uint8_t argc, char *argv[] );
+uint8_t command_address( uint8_t argc, char *argv[] );
 uint8_t command_air( uint8_t argc, char *argv[] );
+
+bool upgrade_address ( uint32_t address );
 /***************** Function Initialization Block End **********/	
 
 		

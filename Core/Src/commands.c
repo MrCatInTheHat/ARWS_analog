@@ -59,14 +59,41 @@ extern wgauge_t wind_gauge;
 
 #define FROUND(x) ((x) >= 0.0 ? (x) + 0.005 : (x) - 0.005)
 
+
+typedef struct {
+    uint32_t image_size;
+    uint32_t image_crc;
+    uint32_t signature;
+    uint32_t address;
+    uint32_t reserved[ 124 ];
+    uint32_t image[];
+} firmware_metadata_t;
+
+
 /***************** Fucntion Declaration Block Begin ***********/
 
 uint8_t command_open( uint8_t argc, char *argv[] )
 {
+#define DEFAULT_ADDRESS 1
+
+	uint8_t buffer[32] = { 0 };
+	const uint8_t *data = (const uint8_t *) 0x08002600;
+	firmware_metadata_t *metadata;
+
+	for ( size_t i = 0; i != 32; ++i )
+		*( buffer + i ) = *( data + i );
+
+	metadata = (firmware_metadata_t *)buffer;
+
+	if ( ( metadata->address == 0 ) || ( metadata->address == 0xFFFFFFFF ) )	{
+
+		metadata->address = DEFAULT_ADDRESS;
+	}
+
 
 	if  ( argc == 3  ) {
 		strupr( argv[ 1 ] );
-		if ( ( str2int( argv[ 2 ] ) == 1 ) && (  0 == strcmp( "ANALOG", argv[ 1 ] ) ) ) {
+		if ( ( str2int( argv[ 2 ] ) == metadata->address ) && (  0 == strcmp( "ANALOG", argv[ 1 ] ) ) ) {
 
 			if ( CLI_CLOSED == console.state ) {
 				console.state = CLI_OPENED;
@@ -122,6 +149,162 @@ uint8_t command_air( uint8_t argc, char *argv[] )
 
 
     return CR_DONE;
+}
+
+
+static bool erase_rom_flash ( uint32_t address )
+{
+
+
+	_Bool result = false;
+	FLASH_EraseInitTypeDef xFlash_Erase;
+	uint32_t Error_Flash = 0;
+
+	xFlash_Erase.TypeErase = FLASH_TYPEERASE_PAGES;
+	xFlash_Erase.Banks = FLASH_BANK_1;
+	xFlash_Erase.PageAddress = ( uint32_t )( address );
+	xFlash_Erase.NbPages = 1;
+
+	if ( HAL_FLASHEx_Erase( &xFlash_Erase, &Error_Flash ) != HAL_OK ) {
+		return result;
+	}
+
+	result = true;
+
+	return result;
+
+}
+
+bool upgrade_signature( bool bootloader ){
+
+	uint32_t data_cast = 0;
+	uint8_t flash_buffer[32] = { 0 };
+	const uint8_t *data = (const uint8_t *) 0x08002600;
+	firmware_metadata_t *metadata;
+
+	for ( size_t i = 0; i != 32; ++i )
+		*( flash_buffer + i ) = *( data + i );
+
+	metadata = (firmware_metadata_t *)flash_buffer;
+	if ( bootloader)
+		metadata->signature = UINT32_C( 0x55AA55AA );
+	else
+		metadata->signature = 0;
+
+	while ( HAL_FLASH_Unlock() != HAL_OK );
+
+	erase_rom_flash( 0x08002600 );
+
+	for ( uint8_t i = 0; i < 8 ; ++i ){
+		//cast data to 32 bit to flash word
+		data_cast = ( *( ( uint32_t *) ( flash_buffer + i * 0x04 ) ) );
+		HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD, 0x08002600 + i * 0x04, (uint32_t)data_cast);
+	}
+
+	while ( HAL_FLASH_Lock() != HAL_OK );
+
+	return true;
+}
+
+
+
+
+uint8_t command_bootloader( uint8_t argc, char *argv[] )
+{
+
+	uint8_t state = 0;
+
+
+
+	    if ( state == 0 ) {
+	        if ( argc == 2 ) {
+	            strupr( argv[ 1 ] );
+	            if ( strcmp( "BOOTLOADER", argv[ 1 ] ) != 0 ) {
+	            	RS_485_SEND()
+					printf("%s", CLI_MSG_UNKNOWN_COMMAND);
+					RS_485_RECEIVE()
+	            } else state = 2;
+	        }
+	        else   state = 1;
+
+
+			RS_485_SEND()
+			printf("REBOOTING%s...\r\n", (state == 2 ? " INTO BOOTLOADER" : ""));
+			RS_485_RECEIVE()
+
+
+	        // write bootloader activation signature
+			if ( state == 2 ) 	upgrade_signature(true);
+
+			state = 0;
+
+
+
+			NVIC_SystemReset();
+			return CR_DONE;
+
+	    }
+
+}
+
+bool upgrade_address ( uint32_t address ){
+
+	uint32_t data_cast = 0;
+	uint8_t buffer[32] = { 0 };
+	const uint8_t *data = (const uint8_t *) 0x08002600;
+	firmware_metadata_t *metadata;
+
+	for ( size_t i = 0; i != 32; ++i )
+		*( buffer + i ) = *( data + i );
+
+	metadata = (firmware_metadata_t *)buffer;
+	metadata->address = address;
+
+
+
+	while ( HAL_FLASH_Unlock() != HAL_OK );
+
+	erase_rom_flash( 0x08002600 );
+
+	for ( uint8_t i = 0; i < 8; ++i ){
+		//cast data to 32 bit to flash word
+		data_cast = ( *( ( uint32_t *) ( buffer + i * 0x04 ) ) );
+		HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD, 0x08002600 + i * 0x04, (uint32_t)data_cast);
+	}
+
+	while ( HAL_FLASH_Lock() != HAL_OK );
+
+	return true;
+}
+
+uint8_t command_address( uint8_t argc, char *argv[] )
+{
+
+
+	uint32_t address = 0;
+	uint8_t flash_buffer[32] = { 0 };
+	const uint8_t *data = (const uint8_t *) 0x08002600;
+	firmware_metadata_t *metadata;
+
+	for ( size_t i = 0; i != 32; ++i )
+		*( flash_buffer + i ) = *( data + i );
+
+	metadata = (firmware_metadata_t *)flash_buffer;
+
+	 if ( argc == 2 ) {
+			address = str2int( argv[ 1 ] );
+			upgrade_address( address );
+			RS_485_SEND()
+			printf("ADDRESS %d \r\n", address);
+			RS_485_RECEIVE()
+	 } else  {
+		RS_485_SEND()
+		printf("ADDRESS %d \r\n", metadata->address);
+		RS_485_RECEIVE()
+	}
+
+	 return CR_DONE;
+
 }
 
 
@@ -427,13 +610,21 @@ uint8_t command_close( uint8_t argc, char *argv[] )
 uint8_t command_reply_data( uint8_t argc, char *argv[] )
 {
 	uint32_t address = 0;
+	uint8_t buffer[32] = { 0 };
+	const uint8_t *data = (const uint8_t *) 0x08002600;
+	firmware_metadata_t *metadata;
+
+	for ( size_t i = 0; i != 32; ++i )
+		*( buffer + i ) = *( data + i );
+
+	metadata = (firmware_metadata_t *)buffer;
 
 
 	if ( argc == 3 ) {
 		strupr( argv[ 2 ] );
 		address = str2int( argv[ 1 ] );
 		if (  0 == strcmp( "MES", argv[ 2 ] ) ) {
-			if ( address == 1 ){
+			if ( address == metadata->address ){
 				printf("AIR: %d %d %d %d %d WIND: %d %d %d %d %d %d %d", meteo.air.temperature,
 						meteo.air.humidity,
 						meteo.air.dew_point,

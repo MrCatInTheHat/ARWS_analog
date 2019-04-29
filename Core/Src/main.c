@@ -59,6 +59,7 @@
 #include "gpio.h"
 #include "adc.h"
 #include "eeprom.h"
+#include "console.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -100,6 +101,9 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 //volatile eeprom_ex_t eeprom_ex_test = { 0 };
 //extern const eeprom_ex_t eeprom_ex ;
+
+extern console_t console;
+
 /* USER CODE END 0 */
 
 /**
@@ -110,6 +114,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   scheduler.vdd = vdd_type_ext;
+//SystemInit();
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -118,7 +123,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  //__enable_irq();
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -126,26 +131,31 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
+  __enable_irq();
+  HAL_InitTick(0);
+  HAL_Delay(1000);
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CRC_Init();
   MX_USB_DEVICE_Init();
-  //MX_IWDG_Init();
+  MX_IWDG_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
 
   /* USER CODE BEGIN 2 */
-//  HAL_IWDG_Refresh(&hiwdg);
+  HAL_IWDG_Refresh(&hiwdg);
   scheduler.state = active_state;
   scheduler_init(&scheduler);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_InitTick(0);
   HAL_Delay(3000);
-//  HAL_IWDG_Refresh(&hiwdg);
+  HAL_IWDG_Refresh(&hiwdg);
   // if ( scheduler.vdd & vdd_type_usb ) {
   if ( hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED ) {
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET); // if RESET -> USB De-attach
@@ -161,7 +171,16 @@ int main(void)
   event_post( &event, time_to_poll_adc_ch1 );
   check_eeprom_ex();
 
-//  HAL_IWDG_Refresh(&hiwdg);
+
+  				/*HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+				HAL_Delay(1);
+				uint8_t str[] = "Hello, world!";
+				uint8_t len = sizeof(str);
+				HAL_UART_Transmit(&huart1, str, len, 50 );
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);*/
+
+
+  HAL_IWDG_Refresh(&hiwdg);
  // i2c_bus_eeprom_write(0xA0,0x00,(uint8_t*)&eeprom_ex,sizeof(eeprom_ex));
  // HAL_Delay(1000);
 //  i2c_bus_eeprom_read(0xA0,0x00,(uint8_t*)&eeprom_ex_test,sizeof(eeprom_ex_test));
@@ -174,7 +193,7 @@ int main(void)
 
 	  scheduler.event = event_pend(&event);
 	  scheduler_run(&scheduler);
-//	  HAL_Delay(5);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -186,12 +205,13 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
+
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-  /**Initializes the CPU, AHB and APB busses clocks 
-  */
+  /* Initializes the CPU, AHB and APB busses clocks  */
+
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -204,8 +224,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  /**Initializes the CPU, AHB and APB busses clocks 
-  */
+  /* Initializes the CPU, AHB and APB busses clocks */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
@@ -223,9 +242,9 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  /**Enables the Clock Security System 
-  */
+  /* Enables the Clock Security System */
   HAL_RCC_EnableCSS();
+
 }
 
 /* USER CODE BEGIN 4 */
