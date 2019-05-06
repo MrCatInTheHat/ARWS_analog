@@ -102,6 +102,7 @@ uint8_t command_open( uint8_t argc, char *argv[] )
 				console.inactivity_timeout = 0;
 
 				printf("%s", CLI_MSG_SESSION_OPENED);
+				printf("\r\nVERSION: %s \r\n", VERSION);
 			}
 		}
 	}

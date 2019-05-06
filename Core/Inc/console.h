@@ -44,6 +44,8 @@
 extern "C" {
 #endif
 
+#define VERSION  "1.0.2"
+
 /***************** Defines Block Begin ************************/
 #define MAX_INPUT_BUFFER 								(256)
 #define MAX_OUTPUT_BUFFER 							(128)
